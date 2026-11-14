@@ -19,6 +19,9 @@ function addLine(parent, className, text) {
  * Fills the shared building panel. The simulation still decides whether an action works.
  */
 export function renderBuildingPanel(panel, { building, topic, state, actions, onAction, onClose }) {
+  const previousFocus = panel.contains(document.activeElement) ? document.activeElement : null;
+  const scienceOpen = panel.querySelector(".education-details")?.open ?? false;
+  const scrollTop = panel.scrollTop;
   panel.replaceChildren();
 
   const header = document.createElement("div");
@@ -41,7 +44,11 @@ export function renderBuildingPanel(panel, { building, topic, state, actions, on
   addLine(panel, "panel-summary", building.summary);
 
   const operational = state.buildings[building.id]?.operational;
-  addLine(panel, "panel-status", operational ? "Status: operational." : "Status: offline.");
+  addLine(
+    panel,
+    operational ? "panel-status panel-status--online" : "panel-status panel-status--offline",
+    operational ? "Operational" : "Offline",
+  );
   if (building.id === "greenhouse") addLine(panel, "panel-status", cropStatus(state.greenhouse));
   addLine(panel, "panel-status", `Actions left today: ${state.actionsRemaining}.`);
 
@@ -51,6 +58,7 @@ export function renderBuildingPanel(panel, { building, topic, state, actions, on
   for (const item of actions) {
     const button = document.createElement("button");
     button.type = "button";
+    button.dataset.actionId = item.action.id;
     button.className = item.available ? "action-button" : "action-button action-button--blocked";
 
     const name = document.createElement("span");
@@ -81,11 +89,26 @@ export function renderBuildingPanel(panel, { building, topic, state, actions, on
   panel.append(list);
 
   if (topic) {
-    addLine(panel, "education-note", topic.summary);
+    const science = document.createElement("details");
+    science.className = "education-details";
+    science.open = scienceOpen;
+    const summary = document.createElement("summary");
+    summary.textContent = "Mission science";
+    science.append(summary);
+    addLine(science, "education-note", topic.summary);
     addLine(
-      panel,
+      science,
       "education-note education-note--source",
       "A NASA data source has not been linked to this note yet.",
     );
+    panel.append(science);
+  }
+
+  panel.scrollTop = scrollTop;
+  if (previousFocus) {
+    const nextFocus = previousFocus.dataset.actionId
+      ? [...list.children].find((button) => button.dataset.actionId === previousFocus.dataset.actionId)
+      : panel.querySelector(previousFocus.matches("summary") ? ".education-details summary" : ".panel-close");
+    nextFocus?.focus({ preventScroll: true });
   }
 }

@@ -2,69 +2,118 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Lunar Survival Academy</title>
   </head>
   <body>
     <div id="app">
       <header class="hud">
-        <div class="hud__brand">
-          <p class="hud__eyebrow">Junior Astronaut Mission Trainer</p>
-          <h1 class="hud__title">Lunar Survival Academy</h1>
-        </div>
+        <h1 class="hud__brand">
+          <span class="hud__moon" aria-hidden="true"></span>
+          <span>Lunar Survival Academy</span>
+        </h1>
         <ul class="meters" aria-label="Colony resources">
           <li class="meter meter--power">
+            <span class="meter__icon" aria-hidden="true">ϟ</span>
             <span class="meter__label">Power</span>
-            <span class="meter__value" id="meter-power">80</span>
+            <strong class="meter__value" id="meter-power">80</strong>
           </li>
           <li class="meter meter--oxygen">
+            <span class="meter__icon" aria-hidden="true">O₂</span>
             <span class="meter__label">Oxygen</span>
-            <span class="meter__value" id="meter-oxygen">80</span>
+            <strong class="meter__value" id="meter-oxygen">80</strong>
           </li>
           <li class="meter meter--food">
+            <span class="meter__icon" aria-hidden="true"></span>
             <span class="meter__label">Food</span>
-            <span class="meter__value" id="meter-food">70</span>
+            <strong class="meter__value" id="meter-food">70</strong>
           </li>
           <li class="meter meter--water">
+            <span class="meter__icon" aria-hidden="true"></span>
             <span class="meter__label">Water</span>
-            <span class="meter__value" id="meter-water">70</span>
+            <strong class="meter__value" id="meter-water">70</strong>
           </li>
           <li class="meter meter--radiation">
+            <span class="meter__icon" aria-hidden="true">☢︎</span>
             <span class="meter__label">Radiation risk</span>
-            <span class="meter__value" id="meter-radiation" aria-describedby="radiation-help">10</span>
+            <strong class="meter__value" id="meter-radiation" aria-describedby="radiation-help">10</strong>
             <span id="radiation-help" class="sr-only">Higher radiation risk is more dangerous. 100 ends the mission.</span>
           </li>
         </ul>
-        <div class="mission-clock" aria-label="Mission clock">
-          <p class="mission-clock__item">
-            <span class="mission-clock__label">Day</span>
-            <strong id="mission-day">1</strong><span class="mission-clock__of"> / 5</span>
-          </p>
-          <p class="mission-clock__item">
-            <span class="mission-clock__label">Actions</span>
-            <strong id="actions-remaining">2</strong>
-          </p>
+        <div class="hud__right">
+          <div class="mission-clock" aria-label="Mission clock">
+            <p><span>Day</span> <strong id="mission-day">1</strong><span> / 5</span></p>
+            <p><strong id="actions-remaining">2</strong> <span>actions left</span></p>
+          </div>
+          <button type="button" id="open-mission-control" class="button menu-toggle" aria-label="Mission Control" aria-haspopup="dialog">
+            <span class="menu-icon" aria-hidden="true"></span>
+          </button>
         </div>
-        <nav id="building-picker" class="building-picker" aria-label="Choose a building"></nav>
       </header>
 
       <main class="stage">
         <div id="game-container" aria-label="Lunar colony map"></div>
-        <aside id="building-panel" class="building-panel" hidden></aside>
       </main>
 
-      <footer class="mission-bar">
-        <div class="mission-bar__copy">
-          <p id="event-banner" class="event-banner" hidden></p>
-          <p id="mission-status" class="mission-status" role="status">Mission underway.</p>
-          <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
-          <p class="disclaimer">Resource numbers are fictional training values.</p>
-        </div>
-        <div class="mission-actions">
-          <button type="button" id="end-day" class="button button--primary">End Day</button>
-          <button type="button" id="restart-mission" class="button button--quiet">Restart Mission</button>
-        </div>
-      </footer>
+      <aside id="building-panel" class="building-panel" aria-labelledby="building-panel-title" hidden></aside>
+
+      <div class="game-controls">
+        <details id="buildings-menu" class="buildings-menu">
+          <summary class="button"><span class="buildings-icon" aria-hidden="true"></span>Buildings</summary>
+          <nav id="building-picker" class="building-picker" aria-label="Choose a building"></nav>
+        </details>
+        <button type="button" id="open-mission-log" class="button log-toggle" aria-haspopup="dialog">Mission Log</button>
+        <button type="button" id="end-day" class="button button--primary">
+          <span class="day-icon" aria-hidden="true">☾</span>End Day
+        </button>
+      </div>
+
+      <div id="notification" class="notification" hidden>
+        <strong class="notification__title"></strong>
+        <span class="notification__message"></span>
+      </div>
+      <div class="sr-only">
+        <p id="event-banner" role="status" hidden></p>
+        <p id="mission-status" role="status">Mission underway.</p>
+        <p id="feedback" role="status"></p>
+      </div>
+
+      <dialog id="mission-control" class="mission-dialog" aria-labelledby="dialog-title">
+        <header class="dialog-header">
+          <h2 id="dialog-title">Mission Control</h2>
+          <button type="button" id="close-mission-control" class="button dialog-close" aria-label="Close Mission Control">×</button>
+        </header>
+        <section data-dialog-view="menu">
+          <button type="button" class="button button--primary" id="resume-game" autofocus>Resume Game</button>
+          <button type="button" class="button" data-show-view="help">How to Play</button>
+          <button type="button" class="button" data-show-view="science">NASA Science / References</button>
+          <button type="button" class="button button--danger" id="restart-mission" data-show-view="restart">Restart Mission</button>
+        </section>
+        <section data-dialog-view="help" hidden>
+          <ol>
+            <li>Select a building on the map or from the Buildings menu.</li>
+            <li>Read what an action costs before you use it. You have two actions each day.</li>
+            <li>Choose End Day to advance time. Keep the crew supplied and radiation risk below 100 through day five.</li>
+          </ol>
+        </section>
+        <section data-dialog-view="science" hidden>
+          <p>The notes in each building panel explain the science behind its actions. Resource numbers are fictional training values.</p>
+          <p>The project is still verifying the challenge’s NASA data sources.</p>
+          <a href="https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/" target="_blank" rel="noopener noreferrer">NASA Space Apps challenge page (opens in a new tab)</a>
+        </section>
+        <section data-dialog-view="restart" hidden>
+          <p>Start again from Day 1? Your current mission progress will be lost.</p>
+          <div class="dialog-actions">
+            <button type="button" class="button" id="cancel-restart">Cancel</button>
+            <button type="button" class="button button--danger" id="confirm-restart">Restart Mission</button>
+          </div>
+        </section>
+        <section data-dialog-view="log" hidden>
+          <p id="mission-log-empty">Mission messages will appear here as you play.</p>
+          <ol id="mission-log-entries" class="log-entries" hidden></ol>
+        </section>
+        <button type="button" class="button dialog-back" id="mission-control-back" hidden>Back to Mission Control</button>
+      </dialog>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

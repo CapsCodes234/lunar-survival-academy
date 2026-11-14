@@ -31,12 +31,6 @@ export class ColonyScene extends Phaser.Scene {
 
     this.drawSky();
     this.drawGround();
-    this.add.text(640, 42, "Click a building to choose it", {
-      fontFamily: "Trebuchet MS, Verdana, sans-serif",
-      fontSize: "18px",
-      color: "#f4efe6",
-    }).setOrigin(0.5).setDepth(2);
-
     for (const config of buildings) {
       const building = new Building(this, config, (buildingId) => {
         this.selectBuilding(buildingId);
@@ -122,11 +116,13 @@ export class ColonyScene extends Phaser.Scene {
 
   selectBuilding(buildingId) {
     const building = this.buildingById.get(buildingId);
-    if (!building || this.selectedId === buildingId) return;
+    if (!building) return;
 
-    this.selectedId = buildingId;
-    for (const entry of this.buildings) entry.setSelected(entry.id === buildingId);
-    this.moveAstronautTo(buildingId);
+    if (this.selectedId !== buildingId) {
+      this.selectedId = buildingId;
+      for (const entry of this.buildings) entry.setSelected(entry.id === buildingId);
+      this.moveAstronautTo(buildingId);
+    }
     this.bridge.onBuildingSelected(buildingId);
   }
 

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { buildings } from "../../data/buildings.js";
 import { worldAssets } from "../worldAssets.js";
+import { prefersReducedMotion } from "../prefersReducedMotion.js";
 import { Astronaut } from "../objects/Astronaut.js";
 import { Building } from "../objects/Building.js";
 import { drawLunarTerrain } from "./lunarTerrain.js";
@@ -22,6 +23,10 @@ export class ColonyScene extends Phaser.Scene {
     this.crew = [];
     this.activeAstronaut = null;
     this.bridge = null;
+    this.resourceFeedback = null;
+    this.resourceTween = null;
+    this.resourceTimer = null;
+    this.warningTween = null;
   }
 
   preload() {
@@ -48,6 +53,8 @@ export class ColonyScene extends Phaser.Scene {
 
     this.crew = STARTING_CREW.map((member) => new Astronaut(this, member));
     this.activeAstronaut = this.crew[0] ?? null;
+    this.stormLight = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xff732c)
+      .setOrigin(0).setDepth(24).setVisible(false);
 
     const watermark = this.add.text(640, 692, "Sprite art: AI-generated with ChatGPT", {
       fontFamily: "Segoe UI, sans-serif",
@@ -73,9 +80,8 @@ export class ColonyScene extends Phaser.Scene {
 
     this.bridge.clearSelection = () => this.clearSelection();
     this.bridge.moveAstronautTo = (buildingId) => this.moveAstronautTo(buildingId);
-    this.bridge.playActionFeedback = (buildingId) => {
-      this.buildingById.get(buildingId)?.flash();
-    };
+    this.bridge.playActionFeedback = (buildingId, changes) => this.playActionFeedback(buildingId, changes);
+    this.bridge.playRadiationWarning = () => this.playRadiationWarning();
     this.bridge.resetVisuals = () => this.resetVisuals();
     this.bridge.selectBuilding = (buildingId) => this.selectBuilding(buildingId);
 
@@ -111,9 +117,87 @@ export class ColonyScene extends Phaser.Scene {
     this.activeAstronaut.moveTo(building.approachX, building.approachY);
   }
 
+  playActionFeedback(buildingId, changes = []) {
+    const building = this.buildingById.get(buildingId);
+    if (!building) return;
+    for (const other of this.buildings) {
+      if (other !== building) other.clearActivity();
+    }
+    building.flash();
+    this.activeAstronaut?.workAt(building.approachX, building.approachY, building.activityColor);
+    this.clearResourceFeedback();
+    if (!changes.length) return;
+
+    const { x, y } = building.container;
+    const offset = x < this.scale.width / 2 ? 94 : -94;
+    const fontSize = Phaser.Math.Clamp(Math.round(11 * this.scale.width / this.scale.displaySize.width), 23, 36);
+    const group = this.add.container(x + offset, y - 84).setDepth(26);
+    changes.forEach(({ text, favorable }, index) => {
+      const label = this.add.text(0, index * (fontSize + 11), text, {
+        fontFamily: "Segoe UI, sans-serif",
+        fontSize: `${fontSize}px`,
+        fontStyle: "bold",
+        color: favorable ? "#aef4c3" : "#ffd28f",
+        backgroundColor: "#152237",
+        padding: { x: 8, y: 3 },
+      }).setOrigin(0.5);
+      group.add(label);
+    });
+    this.resourceFeedback = group;
+    if (prefersReducedMotion()) {
+      this.resourceTimer = this.time.delayedCall(1150, () => this.clearResourceFeedback());
+      return;
+    }
+    this.resourceTween = this.tweens.add({
+      targets: group,
+      y: group.y - 23,
+      alpha: 0,
+      delay: 380,
+      duration: 760,
+      ease: "Sine.easeIn",
+      onComplete: () => {
+        this.resourceTween = null;
+        this.clearResourceFeedback();
+      },
+    });
+  }
+
+  clearResourceFeedback() {
+    this.resourceTween?.stop();
+    this.resourceTimer?.remove();
+    this.resourceFeedback?.destroy();
+    this.resourceTween = null;
+    this.resourceTimer = null;
+    this.resourceFeedback = null;
+  }
+
+  playRadiationWarning() {
+    this.buildingById.get("habitat")?.flash();
+    if (prefersReducedMotion()) return;
+    this.warningTween?.stop();
+    this.stormLight.setVisible(true).setAlpha(0.17);
+    this.warningTween = this.tweens.add({
+      targets: this.stormLight,
+      alpha: 0,
+      duration: 1250,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.warningTween = null;
+        this.stormLight.setVisible(false);
+      },
+    });
+  }
+
   resetVisuals() {
     this.selectedId = null;
-    for (const building of this.buildings) building.setSelected(false);
+    for (const building of this.buildings) {
+      building.setSelected(false);
+      building.clearActivity();
+    }
+    this.clearResourceFeedback();
+    this.warningTween?.stop();
+    this.warningTween = null;
+    this.stormLight.setVisible(false);
     if (!this.activeAstronaut) return;
     this.activeAstronaut.moveTo(this.activeAstronaut.homeX, this.activeAstronaut.homeY);
   }

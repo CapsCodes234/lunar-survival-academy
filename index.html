@@ -73,6 +73,13 @@
         <strong class="notification__title"></strong>
         <span class="notification__message"></span>
       </div>
+      <aside id="day-recap" class="notification day-recap" aria-labelledby="day-recap-title" hidden>
+        <p id="day-recap-title" class="notification__title"></p>
+        <p id="day-recap-changes" class="day-recap-changes"></p>
+        <p id="day-recap-crop" hidden></p>
+        <p id="day-recap-warning" hidden>Solar Radiation Warning. A historical NASA observation inspired this drill.</p>
+        <button type="button" id="skip-day-recap" class="button">Skip recap</button>
+      </aside>
       <div class="sr-only">
         <p id="event-banner" role="status" hidden></p>
         <p id="mission-status" role="status">Mission underway.</p>
@@ -114,6 +121,12 @@
         <section data-dialog-view="log" hidden>
           <p id="mission-log-empty">Mission messages will appear here as you play.</p>
           <ol id="mission-log-entries" class="log-entries" hidden></ol>
+        </section>
+        <section data-dialog-view="result" hidden>
+          <p id="result-days"></p>
+          <p id="result-message"></p>
+          <dl id="result-resources" class="result-resources" aria-label="Final resources"></dl>
+          <button type="button" id="result-restart" class="button button--primary">Restart mission</button>
         </section>
         <button type="button" class="button dialog-back" id="mission-control-back" hidden>Back to Mission Control</button>
       </dialog>

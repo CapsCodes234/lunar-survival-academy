@@ -1,9 +1,5 @@
 import { addWorldImage, worldAssets } from "../worldAssets.js";
-
-function prefersReducedMotion() {
-  return typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+import { prefersReducedMotion } from "../prefersReducedMotion.js";
 
 /**
  * One astronaut figure. Create several instances later for a larger crew.
@@ -16,6 +12,10 @@ export class Astronaut {
     this.homeY = y;
     this.scene = scene;
     this.tween = null;
+    this.destination = null;
+    this.onArrival = null;
+    this.taskTween = null;
+    this.taskTimer = null;
 
     this.container = scene.add.container(x, y);
     this.container.setDepth(20);
@@ -31,11 +31,11 @@ export class Astronaut {
     this.container.add(graphics);
 
     const art = addWorldImage(this.scene, worldAssets.astronaut);
-    if (art) {
-      this.container.add(art.image);
-    } else {
-      this.drawPlaceholder(graphics);
-    }
+    this.body = art?.image ?? this.scene.add.graphics();
+    if (!art) this.drawPlaceholder(this.body);
+    this.taskLight = this.scene.add.ellipse(2, 0, 53, 15, 0xffffff, 0.24)
+      .setStrokeStyle(2, 0xffffff, 0.9).setVisible(false);
+    this.container.add([this.taskLight, this.body]);
   }
 
   drawPlaceholder(graphics) {
@@ -55,13 +55,19 @@ export class Astronaut {
     graphics.fillRoundedRect(-4, -50, 12, 8, 3);
   }
 
-  moveTo(x, y) {
+  moveTo(x, y, onArrival = null) {
+    this.clearTask();
+    this.onArrival = onArrival;
+    if (this.tween && this.destination.x === x && this.destination.y === y && !prefersReducedMotion()) return;
+
     const previous = this.tween;
     this.tween = null;
     previous?.stop();
+    this.destination = { x, y };
 
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() || (this.container.x === x && this.container.y === y)) {
       this.container.setPosition(x, y);
+      this.arrive();
       return;
     }
 
@@ -72,9 +78,44 @@ export class Astronaut {
       duration: 650,
       ease: "Sine.easeInOut",
       onComplete: () => {
-        if (this.tween === tween) this.tween = null;
+        if (this.tween !== tween) return;
+        this.tween = null;
+        this.arrive();
       },
     });
     this.tween = tween;
+  }
+
+  arrive() {
+    const callback = this.onArrival;
+    this.onArrival = null;
+    callback?.();
+  }
+
+  workAt(x, y, color) {
+    this.moveTo(x, y, () => {
+      this.taskLight.setFillStyle(color, 0.22).setStrokeStyle(2, color, 0.9).setVisible(true);
+      if (!prefersReducedMotion()) {
+        this.taskTween = this.scene.tweens.add({
+          targets: this.body,
+          y: -4,
+          duration: 145,
+          ease: "Sine.easeInOut",
+          yoyo: true,
+          repeat: 1,
+          onComplete: () => { this.taskTween = null; },
+        });
+      }
+      this.taskTimer = this.scene.time.delayedCall(640, () => this.clearTask());
+    });
+  }
+
+  clearTask() {
+    this.taskTween?.stop();
+    this.taskTimer?.remove();
+    this.taskTween = null;
+    this.taskTimer = null;
+    this.body.y = 0;
+    this.taskLight.setVisible(false);
   }
 }

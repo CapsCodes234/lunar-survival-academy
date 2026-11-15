@@ -15,6 +15,7 @@ export function createSceneBridge() {
     },
     moveAstronautTo() {},
     playActionFeedback() {},
+    playRadiationWarning() {},
     resetVisuals() {},
   };
   return bridge;

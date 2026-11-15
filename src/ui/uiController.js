@@ -2,7 +2,10 @@ import { assessBuildingAction, describeActionCost, listActionsForBuilding } from
 import { COMMANDS } from "../core/gameController.js";
 import { describeDonkiObservation, donkiObservation, educationalContent } from "../data/educationalContent.js";
 import { buildings, getBuildingById } from "../data/buildings.js";
+import { resourceChanges, resourceLabels } from "../data/missionFeedback.js";
 import { renderBuildingPanel } from "./buildingPanel.js";
+
+const DAY_RECAP_MS = 2200;
 
 const REQUIRED_IDS = [
   "meter-power",
@@ -21,6 +24,16 @@ const REQUIRED_IDS = [
   "restart-mission",
   "buildings-menu",
   "notification",
+  "day-recap",
+  "day-recap-title",
+  "day-recap-changes",
+  "day-recap-crop",
+  "day-recap-warning",
+  "skip-day-recap",
+  "result-days",
+  "result-message",
+  "result-resources",
+  "result-restart",
   "open-mission-control",
   "open-mission-log",
   "mission-control",
@@ -81,6 +94,8 @@ export function mountInterface({ controller, bridge }) {
   let dialogTrigger;
   let viewTrigger;
   let notificationTimer;
+  let dayRecapTimer;
+  let endingDay = false;
 
   const pickerButtons = buildings.map((building) => {
     const button = document.createElement("button");
@@ -122,6 +137,7 @@ export function mountInterface({ controller, bridge }) {
     const status = result.state.missionStatus;
     const event = result.state.currentEvent;
     const newWarning = event && event.id !== previousEventId;
+    if (newWarning) bridge.playRadiationWarning();
     let heading = result.ok ? title : "Action unavailable";
     let tone = result.ok ? "ok" : "error";
 
@@ -177,14 +193,20 @@ export function mountInterface({ controller, bridge }) {
       state,
       actions,
       onAction(actionId) {
-        const eventId = controller.getState().currentEvent?.id;
+        const before = controller.getState();
         const result = controller.dispatch({
           type: COMMANDS.BUILDING_ACTION,
           buildingId: building.id,
           actionId,
         });
-        showFeedback(result, "Action complete", eventId);
-        if (result.ok) bridge.playActionFeedback(building.id);
+        showFeedback(result, "Action complete", before.currentEvent?.id);
+        if (result.ok) {
+          bridge.playActionFeedback(building.id, resourceChanges(before.resources, result.state.resources));
+          if (result.state.missionStatus !== "active") {
+            finishDayRecap();
+            showMissionResult(result.state);
+          }
+        }
       },
       onClose() {
         hidePanel();
@@ -217,7 +239,7 @@ export function mountInterface({ controller, bridge }) {
     element["meter-radiation"].textContent = formatMeter(state.resources.radiationRisk);
     element["mission-day"].textContent = formatMeter(state.day);
     element["actions-remaining"].textContent = formatMeter(state.actionsRemaining);
-    element["end-day"].disabled = state.missionStatus !== "active";
+    element["end-day"].disabled = endingDay || state.missionStatus !== "active";
 
     const status = element["mission-status"];
     status.className = `mission-status mission-status--${state.missionStatus}`;
@@ -250,27 +272,100 @@ export function mountInterface({ controller, bridge }) {
     openPanel(buildingId);
   };
 
-  element["end-day"].addEventListener("click", () => {
-    const eventId = controller.getState().currentEvent?.id;
-    showFeedback(controller.dispatch({ type: COMMANDS.END_DAY }), "Day complete", eventId);
+  function finishDayRecap() {
+    window.clearTimeout(dayRecapTimer);
+    endingDay = false;
+    const moveFocus = document.activeElement === element["skip-day-recap"];
+    element["day-recap"].hidden = true;
+    const endDay = element["end-day"];
+    endDay.disabled = controller.getState().missionStatus !== "active";
+    if (moveFocus && !endDay.disabled && !dialog.open) endDay.focus({ preventScroll: true });
+  }
+
+  function showDayRecap(before, after, restoreFocus) {
+    element["day-recap-title"].textContent = `Day ${before.day} complete · Day ${after.day} begins`;
+    const changes = resourceChanges(before.resources, after.resources);
+    element["day-recap-changes"].replaceChildren(...changes.map(({ text }) => {
+      const change = document.createElement("span");
+      change.textContent = text;
+      return change;
+    }));
+
+    const crop = after.greenhouse;
+    let cropUpdate = "";
+    if (crop.crop === "growing") {
+      cropUpdate = crop.growthPaused
+        ? "Lettuce growth paused. Check power and water."
+        : `Lettuce grew (${crop.growthProgress}/${crop.growthRequired} days).`;
+    } else if (crop.crop === "ready" && before.greenhouse.crop !== "ready") {
+      cropUpdate = "Lettuce is ready to harvest.";
+    }
+    element["day-recap-crop"].textContent = cropUpdate;
+    element["day-recap-crop"].hidden = !cropUpdate;
+    const warning = after.currentEvent && after.currentEvent.id !== before.currentEvent?.id;
+    element["day-recap-warning"].hidden = !warning;
+    element["day-recap"].dataset.tone = warning ? "warning" : "ok";
+    element["day-recap"].hidden = false;
+    if (restoreFocus) element["skip-day-recap"].focus({ preventScroll: true });
+    dayRecapTimer = window.setTimeout(finishDayRecap, DAY_RECAP_MS);
+  }
+
+  element["skip-day-recap"].addEventListener("click", finishDayRecap);
+  element["end-day"].addEventListener("click", (event) => {
+    if (endingDay) return;
+    const before = controller.getState();
+    if (before.missionStatus !== "active") return;
+    const restoreFocus = document.activeElement === event.currentTarget;
+    endingDay = true;
+    event.currentTarget.disabled = true;
+    const result = controller.dispatch({ type: COMMANDS.END_DAY });
+    showFeedback(result, "Day complete", before.currentEvent?.id);
+    if (result.ok && result.state.missionStatus === "active") {
+      showDayRecap(before, result.state, restoreFocus);
+      return;
+    }
+    finishDayRecap();
+    if (result.ok) showMissionResult(result.state);
   });
 
-  function showDialogView(view) {
+  function showDialogView(view, title = DIALOG_TITLES[view]) {
     for (const section of dialog.querySelectorAll("[data-dialog-view]")) {
       section.hidden = section.dataset.dialogView !== view;
     }
-    element["dialog-title"].textContent = DIALOG_TITLES[view];
-    element["mission-control-back"].hidden = view === "menu" || view === "log" || view === "restart";
+    element["dialog-title"].textContent = title;
+    element["mission-control-back"].hidden = ["menu", "log", "restart", "result"].includes(view);
     dialog.scrollTop = 0;
   }
 
-  function openDialog(view, trigger) {
+  function openDialog(view, trigger, title) {
     buildingsMenu.open = false;
     dialogTrigger = trigger;
     viewTrigger = null;
-    showDialogView(view);
-    dialog.showModal();
+    showDialogView(view, title);
+    if (!dialog.open) dialog.showModal();
     if (view === "log") element["close-mission-control"].focus();
+  }
+
+  function showMissionResult(state) {
+    const won = state.missionStatus === "victory";
+    const survived = won ? state.day : state.day - 1;
+    element["result-days"].textContent = `${survived} of ${state.maxDays} days survived`;
+    element["result-message"].textContent = won
+      ? "You planned ahead, kept the crew supplied, and made it through the solar storm."
+      : state.defeatReason;
+    const supplies = Object.entries(resourceLabels).map(([key, label]) => {
+      const row = document.createElement("div");
+      const name = document.createElement("dt");
+      const value = document.createElement("dd");
+      name.textContent = label;
+      value.textContent = formatMeter(state.resources[key]);
+      row.append(name, value);
+      return row;
+    });
+    element["result-resources"].replaceChildren(...supplies);
+    element.notification.hidden = true;
+    openDialog("result", element["open-mission-control"], won ? "Mission complete" : "Mission failed");
+    element["result-restart"].focus();
   }
 
   function returnToMenu() {
@@ -296,7 +391,8 @@ export function mountInterface({ controller, bridge }) {
     });
   }
 
-  element["confirm-restart"].addEventListener("click", () => {
+  function restartMission() {
+    finishDayRecap();
     hidePanel();
     bridge.clearSelection();
     selectedId = null;
@@ -305,15 +401,24 @@ export function mountInterface({ controller, bridge }) {
     log.replaceChildren();
     showFeedback(controller.reset(), "Mission restarted");
     dialog.close();
-  });
+  }
+
+  element["confirm-restart"].addEventListener("click", restartMission);
+  element["result-restart"].addEventListener("click", restartMission);
 
   document.addEventListener("pointerdown", (event) => {
     if (buildingsMenu.open && !buildingsMenu.contains(event.target)) buildingsMenu.open = false;
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.repeat && (event.key === "Enter" || event.key === " ")
+      && [element["end-day"], element["skip-day-recap"]].includes(event.target)) {
+      event.preventDefault();
+    }
     if (event.key !== "Escape" || dialog.open) return;
-    if (buildingsMenu.open) {
+    if (!element["day-recap"].hidden) {
+      finishDayRecap();
+    } else if (buildingsMenu.open) {
       buildingsMenu.open = false;
       buildingsToggle.focus({ preventScroll: true });
     } else if (!panel.hidden) {

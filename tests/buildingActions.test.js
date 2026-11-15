@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { assessBuildingAction } from "../src/core/buildingActions.js";
 import { buildings } from "../src/data/buildings.js";
+import { resourceChanges } from "../src/data/missionFeedback.js";
 import { BUILDING_ACTIONS } from "../src/core/buildingActions.js";
 import { createGameController } from "../src/core/gameController.js";
 import { createInitialState } from "../src/core/initialState.js";
@@ -14,6 +15,26 @@ function perform(state, buildingId, actionId) {
     actionId,
   });
 }
+
+test("action feedback reports actual capped gains and omits unchanged supplies", () => {
+  const state = createInitialState();
+  state.resources.power = 95;
+  const solar = perform(state, "solar", "maintain");
+  assert.deepEqual(resourceChanges(state.resources, solar.state.resources), [
+    { text: "+5 Power", favorable: true },
+  ]);
+  const rejected = perform(state, "greenhouse", "harvest");
+  assert.deepEqual(resourceChanges(state.resources, rejected.state.resources), []);
+});
+
+test("action feedback distinguishes power spent from a reduction in radiation risk", () => {
+  const state = createInitialState();
+  const sheltered = perform(state, "habitat", "shelter");
+  assert.deepEqual(resourceChanges(state.resources, sheltered.state.resources), [
+    { text: "−8 Power", favorable: false },
+    { text: "−20 Radiation risk", favorable: true },
+  ]);
+});
 
 test("every building has a defined action and a shared configuration entry", () => {
   const buildingIds = buildings.map((building) => building.id);

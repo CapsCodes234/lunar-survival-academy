@@ -1,10 +1,13 @@
 import Phaser from "phaser";
 import { addWorldImage, worldAssets } from "../worldAssets.js";
+import { prefersReducedMotion } from "../prefersReducedMotion.js";
 
-function prefersReducedMotion() {
-  return typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+const ACTIVITY_COLORS = {
+  greenhouse: 0x8af9a0,
+  oxygen: 0x78efff,
+  solar: 0xffd472,
+  habitat: 0x77afff,
+};
 
 export class Building {
   constructor(scene, config, onSelect) {
@@ -12,7 +15,9 @@ export class Building {
     this.approachX = config.approachX;
     this.approachY = config.approachY;
     this.scene = scene;
-    this.flashTween = null;
+    this.activityTween = null;
+    this.activityTimer = null;
+    this.activityColor = ACTIVITY_COLORS[config.type];
 
     this.container = scene.add.container(config.x, config.y);
     // Buildings sort back to front by ground contact. The crew uses the open foreground lane.
@@ -28,6 +33,11 @@ export class Building {
     this.selection.setStrokeStyle(3, 0xacfff3, 0.96);
     this.selection.setVisible(false);
     this.container.add(this.selection);
+
+    const isHabitat = config.type === "habitat";
+    this.activity = scene.add.ellipse(0, isHabitat ? -10 : 0, config.padWidth, isHabitat ? 64 : 44,
+      this.activityColor, 0.32).setStrokeStyle(3, this.activityColor).setVisible(false);
+    this.container.add(this.activity);
 
     const art = addWorldImage(scene, worldAssets[this.id]);
     if (art) {
@@ -114,22 +124,31 @@ export class Building {
     this.selection.setVisible(selected);
   }
 
-  flash() {
-    this.flashTween?.stop();
-    this.container.setAlpha(1);
-    if (prefersReducedMotion()) return;
+  clearActivity() {
+    this.activityTween?.stop();
+    this.activityTimer?.remove();
+    this.activityTween = null;
+    this.activityTimer = null;
+    this.activity.setVisible(false);
+  }
 
-    const tween = this.scene.tweens.add({
-      targets: this.container,
-      alpha: 0.55,
-      duration: 90,
-      yoyo: true,
-      repeat: 1,
+  flash() {
+    this.clearActivity();
+    this.activity.setVisible(true).setAlpha(0.88).setScale(1);
+    if (prefersReducedMotion()) {
+      this.activityTimer = this.scene.time.delayedCall(650, () => this.clearActivity());
+      return;
+    }
+    this.activityTween = this.scene.tweens.add({
+      targets: this.activity,
+      alpha: 0,
+      scale: 1.16,
+      duration: 900,
+      ease: "Quad.easeOut",
       onComplete: () => {
-        this.container.setAlpha(1);
-        if (this.flashTween === tween) this.flashTween = null;
+        this.activityTween = null;
+        this.activity.setVisible(false);
       },
     });
-    this.flashTween = tween;
   }
 }

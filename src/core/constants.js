@@ -10,11 +10,11 @@ export const RADIATION_MAX = 100;
 export const TRACKED_RESOURCES = ["power", "oxygen", "food", "water"];
 
 export const INITIAL_RESOURCES = {
-  power: 80,
-  oxygen: 80,
-  food: 70,
-  water: 70,
-  radiationRisk: 10,
+  power: 48,
+  oxygen: 30,
+  food: 27,
+  water: 46,
+  radiationRisk: 35,
 };
 
 export const STARTING_DAY = 1;
@@ -60,7 +60,7 @@ export const SOLAR_RADIATION_EVENT = {
   id: "solar-radiation-warning",
   title: "Solar Radiation Warning",
   day: 3,
-  radiationIncrease: 25,
+  radiationIncrease: 65,
 };
 
 /**

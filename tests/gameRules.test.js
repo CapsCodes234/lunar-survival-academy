@@ -3,23 +3,27 @@ import test from "node:test";
 import { assessBuildingAction } from "../src/core/buildingActions.js";
 import { createGameController } from "../src/core/gameController.js";
 import { createInitialState } from "../src/core/initialState.js";
-import { resolveEndOfDay } from "../src/core/gameRules.js";
+import { applyResourceDelta, resolveEndOfDay } from "../src/core/gameRules.js";
 
 function endDay(controller) {
   return controller.dispatch({ type: "END_DAY" });
 }
 
-test("initial game state matches the Phase 1 contract", () => {
+function action(controller, buildingId, actionId) {
+  return controller.dispatch({ type: "BUILDING_ACTION", buildingId, actionId });
+}
+
+test("initial game state matches the five-day training setup", () => {
   assert.deepEqual(createInitialState(), {
     day: 1,
     maxDays: 5,
     actionsRemaining: 2,
     resources: {
-      power: 80,
-      oxygen: 80,
-      food: 70,
-      water: 70,
-      radiationRisk: 10,
+      power: 48,
+      oxygen: 30,
+      food: 27,
+      water: 46,
+      radiationRisk: 35,
     },
     greenhouse: {
       crop: "empty",
@@ -45,48 +49,41 @@ test("each new state object has its own resource values", () => {
   const first = createInitialState();
   first.resources.power = 1;
   first.greenhouse.crop = "ready";
-  assert.equal(createInitialState().resources.power, 80);
+  assert.equal(createInitialState().resources.power, 48);
   assert.equal(createInitialState().greenhouse.crop, "empty");
 });
 
 test("power and radiation stay inside their meters", () => {
-  const controller = createGameController();
-  controller.dispatch({ type: "BUILDING_ACTION", buildingId: "solar", actionId: "maintain" });
-  controller.dispatch({ type: "BUILDING_ACTION", buildingId: "solar", actionId: "maintain" });
-  assert.equal(controller.getState().resources.power, 100);
-
-  const sheltered = controller.dispatch({ type: "RESET" });
-  assert.equal(sheltered.state.resources.power, 80);
-  const result = controller.dispatch({
-    type: "BUILDING_ACTION",
-    buildingId: "habitat",
-    actionId: "shelter",
-  });
-  assert.equal(result.ok, true);
-  assert.equal(result.state.resources.radiationRisk, 0);
-  assert.equal(result.state.resources.power, 72);
+  const { resources } = createInitialState();
+  const above = applyResourceDelta(resources, { power: 100, radiationRisk: 100 });
+  const below = applyResourceDelta(resources, { power: -100, radiationRisk: -100 });
+  assert.equal(above.power, 100);
+  assert.equal(above.radiationRisk, 100);
+  assert.equal(below.power, 0);
+  assert.equal(below.radiationRisk, 0);
 });
 
 test("daily consumption is applied once and the day 3 warning raises radiation once", () => {
   const controller = createGameController();
+  assert.equal(action(controller, "habitat", "shelter").ok, true);
 
   endDay(controller);
   endDay(controller);
   assert.equal(controller.getState().day, 3);
   assert.equal(controller.getState().currentEvent, null);
-  assert.equal(controller.getState().resources.radiationRisk, 10);
-  assert.equal(controller.getState().resources.oxygen, 66);
+  assert.equal(controller.getState().resources.radiationRisk, 15);
+  assert.equal(controller.getState().resources.oxygen, 16);
 
   const dayThree = endDay(controller);
   assert.equal(dayThree.ok, true);
   assert.match(dayThree.message, /Solar Radiation Warning/);
   assert.equal(controller.getState().day, 4);
-  assert.equal(controller.getState().resources.radiationRisk, 35);
+  assert.equal(controller.getState().resources.radiationRisk, 80);
   assert.equal(controller.getState().currentEvent.id, "solar-radiation-warning");
   assert.deepEqual(controller.getState().triggeredEventIds, ["solar-radiation-warning"]);
 
   endDay(controller);
-  assert.equal(controller.getState().resources.radiationRisk, 35);
+  assert.equal(controller.getState().resources.radiationRisk, 80);
   assert.equal(controller.getState().triggeredEventIds.length, 1);
 });
 
@@ -97,19 +94,20 @@ test("a prepared shelter lowers the radiation carried into the day 3 warning", (
     buildingId: "habitat",
     actionId: "shelter",
   });
-  assert.equal(sheltered.state.resources.radiationRisk, 0);
+  assert.equal(sheltered.state.resources.radiationRisk, 15);
 
   endDay(controller);
   endDay(controller);
   endDay(controller);
-  assert.equal(controller.getState().resources.radiationRisk, 25);
+  assert.equal(controller.getState().resources.radiationRisk, 80);
 });
 
 test("the radiation event does not run a second time on the same mission", () => {
   const state = createInitialState();
   state.day = 3;
+  state.resources.radiationRisk = 15;
   const first = resolveEndOfDay(state);
-  assert.equal(first.state.resources.radiationRisk, 35);
+  assert.equal(first.state.resources.radiationRisk, 80);
 
   const replay = structuredClone(first.state);
   replay.day = 3;
@@ -117,26 +115,50 @@ test("the radiation event does not run a second time on the same mission", () =>
   replay.actionsRemaining = 2;
   const second = resolveEndOfDay(replay);
   assert.equal(second.ok, true);
-  assert.equal(second.state.resources.radiationRisk, 35);
+  assert.equal(second.state.resources.radiationRisk, 80);
   assert.deepEqual(second.state.triggeredEventIds, ["solar-radiation-warning"]);
 });
 
-test("five daily evaluations from the start produce victory on day 5", () => {
+test("ending days without building actions fails at the solar storm", () => {
   const controller = createGameController();
+  const first = endDay(controller);
+  assert.match(first.message, /Solar storm expected.*Prepare Radiation Shelter/);
+  assert.equal(endDay(controller).state.day, 3);
 
-  for (let step = 0; step < 4; step += 1) endDay(controller);
-  assert.equal(controller.getState().day, 5);
-  assert.equal(controller.getState().missionStatus, "active");
+  const last = endDay(controller);
+  assert.equal(last.state.missionStatus, "defeat");
+  assert.equal(last.state.day, 3);
+  assert.equal(last.state.resources.radiationRisk, 100);
+  assert.match(last.state.defeatReason, /Prepare Radiation Shelter/);
+  assert.match(last.message, /fictional risk points/);
+});
 
-  const finale = endDay(controller);
+test("using all four facilities can win the five-day mission with supplies to spare", () => {
+  const controller = createGameController();
+  const plan = [
+    [["solar", "maintain"], ["greenhouse", "plant"]],
+    [["habitat", "shelter"], ["greenhouse", "care"]],
+    [["greenhouse", "harvest"], ["oxygen", "operate"]],
+    [["solar", "maintain"]],
+    [],
+  ];
+  let finale;
+  for (const actions of plan) {
+    for (const [building, command] of actions) {
+      const result = action(controller, building, command);
+      assert.equal(result.ok, true, result.reason);
+    }
+    finale = endDay(controller);
+    assert.equal(finale.ok, true, finale.reason);
+  }
   assert.equal(finale.ok, true);
   assert.match(finale.message, /Mission success/);
   assert.deepEqual(controller.getState().resources, {
-    power: 55,
-    oxygen: 45,
-    food: 40,
-    water: 55,
-    radiationRisk: 35,
+    power: 21,
+    oxygen: 15,
+    food: 27,
+    water: 10,
+    radiationRisk: 80,
   });
   assert.equal(controller.getState().day, 5);
   assert.equal(controller.getState().missionStatus, "victory");
@@ -159,7 +181,7 @@ test("surviving day 5 with oxygen left is victory, and empty oxygen is defeat", 
   assert.equal(lost.outcome, "defeat");
   assert.equal(lost.state.day, 5);
   assert.equal(lost.state.resources.oxygen, 0);
-  assert.equal(lost.state.defeatReason, "The colony ran out of oxygen.");
+  assert.match(lost.state.defeatReason, /^The colony ran out of oxygen\..*Operate Oxygen System/);
 });
 
 test("critical resource depletion produces defeat and stops the day from advancing", () => {
@@ -178,8 +200,16 @@ test("critical resource depletion produces defeat and stops the day from advanci
     assert.equal(result.state.resources[resource], 0);
     assert.equal(result.state.day, 1);
     assert.equal(result.state.actionsRemaining, 0);
-    assert.equal(result.state.defeatReason, reason);
+    assert.ok(result.state.defeatReason.startsWith(reason));
   }
+});
+
+test("the next-day oxygen warning tells the player how to recover", () => {
+  const state = createInitialState();
+  state.resources.oxygen = 14;
+  const result = resolveEndOfDay(state);
+  assert.equal(result.state.missionStatus, "active");
+  assert.match(result.message, /use up all oxygen.*needs oxygen to breathe.*Operate Oxygen System/);
 });
 
 test("radiation risk of 100 ends the mission during day 3 processing", () => {
@@ -196,8 +226,9 @@ test("radiation risk of 100 ends the mission during day 3 processing", () => {
 
 test("no gameplay command changes the mission after it ends", () => {
   const controller = createGameController();
-  for (let step = 0; step < 5; step += 1) endDay(controller);
+  for (let step = 0; step < 3; step += 1) endDay(controller);
   const finished = controller.getState();
+  assert.equal(finished.missionStatus, "defeat");
 
   const action = controller.dispatch({
     type: "BUILDING_ACTION",
@@ -224,7 +255,7 @@ test("spending the last power point on oxygen defeats the mission", () => {
 
   assert.equal(played.ok, true);
   assert.equal(played.state.resources.power, 0);
-  assert.equal(played.state.resources.oxygen, 100);
+  assert.equal(played.state.resources.oxygen, 50);
   assert.equal(played.state.missionStatus, "defeat");
   assert.equal(played.state.actionsRemaining, 0);
   assert.deepEqual(state, before);
@@ -245,7 +276,8 @@ test("restart restores the initial mission and lets the warning happen again", (
   endDay(controller);
   endDay(controller);
   endDay(controller);
-  assert.equal(controller.getState().resources.radiationRisk, 35);
+  assert.equal(controller.getState().resources.radiationRisk, 100);
+  assert.equal(controller.getState().currentEvent.id, "solar-radiation-warning");
 });
 
 test("callers cannot mutate the controller state", () => {
@@ -257,7 +289,7 @@ test("callers cannot mutate the controller state", () => {
   assert.throws(() => {
     snapshot.day = 4;
   });
-  assert.equal(controller.getState().resources.power, 80);
+  assert.equal(controller.getState().resources.power, 48);
   assert.equal(controller.getState().day, 1);
 });
 
@@ -299,7 +331,7 @@ test("separate controllers do not share a mission", () => {
   const first = createGameController();
   const second = createGameController();
   first.dispatch({ type: "BUILDING_ACTION", buildingId: "solar", actionId: "maintain" });
-  assert.equal(second.getState().resources.power, 80);
+  assert.equal(second.getState().resources.power, 48);
 });
 
 test("resolveEndOfDay does not modify the state it receives", () => {

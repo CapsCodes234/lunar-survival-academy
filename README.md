@@ -6,7 +6,7 @@ The official challenge is **Build a Junior Astronaut Mission Trainer**:
 
 https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/
 
-Phase 2C adds the illustrated colony and crew to the playable five-day mission.
+Phase 3 adds mission balance and educational feedback to the illustrated Phase 2C colony.
 
 ## Technology
 
@@ -155,9 +155,23 @@ The end of a day always runs in this order:
 5. Check for defeat or victory.
 6. On a surviving day before day 5, advance the day and restore 2 actions.
 
-The Day 3 solar radiation warning adds 25 radiation risk and is recorded so it cannot happen twice in the same mission. Preparing the habitat shelter earlier lowers the risk the crew is already carrying.
+The simulated storm adds 65 fictional risk points once, at the end of Day 3. The meter starts at 35, so use Prepare Radiation Shelter before ending Day 3. The warning explains sheltering, and the risk meter uses no radiation-dose units.
 
 The mission ends in victory after the day 5 check if power, oxygen, food, and water are all above 0 and radiation risk is below 100. A critical resource at 0, or radiation risk at 100, is a defeat. After either ending, further actions and day changes are rejected until restart.
+
+### Checking the mission balance
+
+Advancing without taking any building actions ends the mission on Day 3. One verified route is:
+
+| Day | Actions before End Day |
+| --- | --- |
+| 1 | Maintain Solar Array and Plant Lettuce |
+| 2 | Prepare Radiation Shelter and Care for Crops |
+| 3 | Harvest Lettuce and Operate Oxygen System |
+| 4 | Maintain Solar Array |
+| 5 | End Day with the remaining supplies |
+
+Crop care raises the harvest but uses an action, power, and water. Keep enough power for oxygen production and greenhouse upkeep. The Mission Log keeps the storm forecast, shortage messages, and recovery advice for review.
 
 ## Add a building action
 
@@ -197,20 +211,21 @@ Do not commit `node_modules/` or `dist/`. They are listed in `.gitignore`.
 - Resource bar, one shared action panel, End Day, and Restart.
 - Building actions, including greenhouse planting, crop care, and harvest.
 - Daily consumption, the Day 3 radiation warning, victory, defeat, and restart.
-- Automated tests for those rules.
+- Automated tests for the rules, a winning route, and a failed no-action route.
+- Educational guidance in the existing building panels, notifications, and Mission Log.
 
 ## What is not finished
 
 - Three active astronauts, pathfinding, and animation frames.
-- A verified NASA data source. See `NASA_SOURCES.md`.
+- Integration of a verified NASA source from the official challenge’s Resources list. See [NASA verification status](NASA_SOURCES.md).
 - More mission events, tutorials, and sound.
 
 ## Which numbers are simplified
 
-Every resource cost, reward, daily consumption value, growth time, and radiation change is a fictional gameplay number. They live in `src/core/constants.js`. They are not NASA measurements. The page says this under the mission controls.
+Resource costs, rewards, daily consumption, growth times, and radiation risk are fictional gameplay values defined in `src/core/constants.js`. This distinction appears in the building notes and the NASA Science / References view.
 
 ## Where NASA references must be added
 
-Read `NASA_SOURCES.md` before connecting a source. After a teammate confirms a source on the official challenge Resources list, record it there and in `src/data/educationalContent.js`. The building panel already has a place for that note.
+The official challenge lists DONKI, RadLab, and OSDR. The team still needs to choose a specific archived event or study for the game. Record its title, date, URL, and intended use in [NASA sources](NASA_SOURCES.md), then connect it to the corresponding scenario or facility note.
 
 `AI_DISCLOSURE.md` records the AI assistance used to draft this foundation. Update it if the team uses another tool.

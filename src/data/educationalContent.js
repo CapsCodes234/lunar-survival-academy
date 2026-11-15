@@ -46,3 +46,26 @@ export const educationalContent = {
     sourceStatus: "unverified",
   },
 };
+
+export const shortageGuidance = {
+  power: {
+    impact: "Life support and the greenhouse need electricity.",
+    action: "Use Maintain Solar Array.",
+  },
+  oxygen: {
+    impact: "The crew needs oxygen to breathe.",
+    action: "Save power for Operate Oxygen System.",
+  },
+  food: {
+    impact: "The crew needs food every day.",
+    action: "Plant lettuce early and harvest it after two days of growth.",
+  },
+  water: {
+    impact: "The crew and growing crops both need water.",
+    action: "Save water by skipping optional crop care or extra plantings.",
+  },
+  radiationRisk: {
+    impact: "Shelter reduces the crew’s exposure during a solar storm.",
+    action: "Use Prepare Radiation Shelter in the Habitat before ending Day 3.",
+  },
+};

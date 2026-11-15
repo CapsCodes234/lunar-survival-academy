@@ -96,6 +96,7 @@ export function renderBuildingPanel(panel, { building, topic, state, actions, on
     summary.textContent = "Mission science";
     science.append(summary);
     addLine(science, "education-note", topic.summary);
+    addLine(science, "education-note", topic.simplification);
     addLine(
       science,
       "education-note education-note--source",

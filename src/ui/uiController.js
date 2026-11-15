@@ -131,9 +131,13 @@ export function mountInterface({ controller, bridge }) {
     if (newWarning && heading !== event.title) addToLog(event.title, event.message, "warning");
     addToLog(heading, message, tone);
     notificationTitle.textContent = heading;
-    notificationMessage.textContent = newWarning && tone === "warning"
-      ? "Radiation risk rose. Read the full warning in Mission Log."
-      : message;
+    let notification = message;
+    if (status === "defeat") {
+      notification = result.state.defeatReason;
+    } else if (newWarning) {
+      notification = "The simulated storm raised radiation risk. Shelter reduces exposure. See Mission Log for details.";
+    }
+    notificationMessage.textContent = notification;
     element.notification.dataset.tone = tone;
     element.notification.hidden = false;
     window.clearTimeout(notificationTimer);

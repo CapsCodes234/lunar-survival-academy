@@ -1,4 +1,5 @@
 import { SOLAR_RADIATION_EVENT } from "./constants.js";
+import { shortageGuidance } from "../data/educationalContent.js";
 
 /**
  * Add future mission events by appending a builder to SCHEDULED_EVENTS.
@@ -16,7 +17,7 @@ function solarRadiationWarning(state) {
     title: SOLAR_RADIATION_EVENT.title,
     day: SOLAR_RADIATION_EVENT.day,
     radiationIncrease: increase,
-    message: `${SOLAR_RADIATION_EVENT.title}: radiation risk rises by ${increase}. Shelter preparation earlier in the mission lowers the risk the crew is already carrying. This increase is a fictional game value, not a measured solar dose.`,
+    message: `${SOLAR_RADIATION_EVENT.title}: a simulated solar storm adds ${increase} fictional risk points. ${shortageGuidance.radiationRisk.impact} Preparing the Habitat shelter before the storm lowers the crew’s risk in this scenario. Risk points have no radiation-dose units.`,
   };
 }
 

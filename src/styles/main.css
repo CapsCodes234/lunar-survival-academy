@@ -337,6 +337,18 @@ a { color: #92e3ea; }
 [data-tone="error"] .notification__title, .log-entries [data-tone="error"] strong { color: #ffb3ac; }
 @keyframes notification-in { from { opacity: 0; transform: translateY(0.25rem); } }
 
+.day-recap { display: grid; gap: 0.3rem; }
+.day-recap .notification__title { font-weight: 700; }
+.day-recap-changes { display: flex; flex-wrap: wrap; column-gap: 0.65rem; }
+.day-recap .button {
+  justify-self: start;
+  min-height: 2.5rem;
+  padding-inline: 0.65rem;
+  pointer-events: auto;
+}
+#day-recap-warning { color: var(--gold); }
+#app:has(#day-recap:not([hidden])) #notification { visibility: hidden; }
+
 .mission-dialog {
   width: min(26rem, calc(100% - var(--left) - var(--right)));
   max-height: calc(100% - var(--top) - var(--bottom));
@@ -352,6 +364,20 @@ a { color: #92e3ea; }
 [data-dialog-view="help"] li + li { margin-top: 0.45rem; }
 .dialog-actions { display: flex; justify-content: end; gap: 0.5rem; }
 .dialog-back { margin-top: 0.75rem; }
+.result-resources {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0.25rem 0;
+}
+.result-resources > div {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--navy);
+}
+.result-resources dt { color: var(--muted); font-size: 0.8125rem; }
+.result-resources dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .log-entries { display: grid; gap: 0.65rem; padding-inline-start: 1.5rem; }
 .log-entries p { margin-top: 0.15rem; font-size: 0.875rem; }
 

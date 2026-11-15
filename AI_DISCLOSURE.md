@@ -1,14 +1,20 @@
 # AI disclosure
 
-Lunar Survival Academy — Phase 1 foundation.
+Lunar Survival Academy
 
 ## Tools used
 
 | Tool | How it was used | Date |
 | --- | --- | --- |
 | Cursor, with the Grok model | Drafted the Phase 1 project: Vite setup, simulation rules, Phaser scene, HTML interface, tests, and these documents. | 14 November 2026 |
+| ChatGPT image generation | Created the approved astronaut, habitat, oxygen station, hydroponic greenhouse, and solar power station artwork. | Generation date unrecorded |
+| OpenAI Codex | Implemented Phase 2C sprite integration, procedural lunar terrain, asset documentation, and verification. | 15 November 2026 |
 
-ChatGPT was not used for this foundation. No other AI tool was used.
+See the [asset manifest](ASSET_MANIFEST.md) for original filenames and project paths.
+
+## Submission media
+
+The 2026 NASA Space Apps clarification calls for visible AI watermarks on generated images and videos and disclosure of AI tool use in the submission. The game renders “Sprite art: AI-generated with ChatGPT” on the colony view. Keep that watermark legible in submitted screenshots and video, label separately exported generated art, and include the tool uses above in the project submission. [2026 Space Apps AI watermark clarification](https://github.com/nasa/spaceapps/discussions/1947)
 
 ## What the team still needs to do
 

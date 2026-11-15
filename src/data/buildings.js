@@ -1,7 +1,7 @@
 /**
  * Single source for building identity, copy, and map positions.
  * Phaser and the HTML panel both read this list.
- * x/y are pixel positions inside the 1280×720 game scene.
+ * x/y are ground contact positions inside the 1280×720 game scene.
  * approachX/approachY is where an astronaut stops to interact.
  */
 export const buildings = [
@@ -11,8 +11,9 @@ export const buildings = [
     shortName: "Habitat",
     type: "habitat",
     summary: "Crew shelter and radiation protection.",
-    x: 500,
-    y: 300,
+    x: 448,
+    y: 324,
+    padWidth: 233,
     approachX: 500,
     approachY: 390,
     color: 0xd7b48a,
@@ -24,8 +25,9 @@ export const buildings = [
     shortName: "Oxygen",
     type: "oxygen",
     summary: "Oxygen production and life-support management.",
-    x: 780,
-    y: 300,
+    x: 822,
+    y: 324,
+    padWidth: 234,
     approachX: 780,
     approachY: 390,
     color: 0x5ec2b7,
@@ -37,8 +39,9 @@ export const buildings = [
     shortName: "Greenhouse",
     type: "greenhouse",
     summary: "Planting, crop growth, and food harvesting.",
-    x: 430,
-    y: 480,
+    x: 410,
+    y: 538,
+    padWidth: 233,
     approachX: 520,
     approachY: 530,
     color: 0x7dba64,
@@ -50,8 +53,9 @@ export const buildings = [
     shortName: "Solar",
     type: "solar",
     summary: "Electricity generation and array maintenance.",
-    x: 850,
-    y: 470,
+    x: 864,
+    y: 538,
+    padWidth: 262,
     approachX: 760,
     approachY: 530,
     color: 0xe6c15a,

@@ -1,16 +1,7 @@
-Placeholder art for Lunar Survival Academy lives in code for Phase 1.
+# Colony artwork
 
-The colony, buildings, and astronaut are drawn with Phaser shapes in:
+- `buildings/` contains the four facility sprites.
+- `astronauts/` contains the crew sprite.
+- `backgrounds/` and `ui/` are reserved for future assets. The current terrain is drawn in Phaser.
 
-- `src/game/scenes/ColonyScene.js`
-- `src/game/objects/Building.js`
-- `src/game/objects/Astronaut.js`
-
-Drop future image files in the folders below. Do not point the game at a file until that file is actually in the folder. A missing image should never be required for the game to start.
-
-- `backgrounds/` — lunar surface art
-- `buildings/` — habitat, oxygen, greenhouse, and solar images
-- `astronauts/` — crew sprites
-- `ui/` — interface icons
-
-See the README section "Replace placeholder art" before wiring a new image into Phaser.
+[Asset manifest](../../ASSET_MANIFEST.md) · [AI disclosure](../../AI_DISCLOSURE.md)

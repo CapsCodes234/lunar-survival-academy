@@ -1,14 +1,11 @@
 import Phaser from "phaser";
+import { addWorldImage, worldAssets } from "../worldAssets.js";
 
 function prefersReducedMotion() {
   return typeof window.matchMedia === "function"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/**
- * Placeholder building drawn with Phaser shapes.
- * Replace drawPlaceholder later, or swap in an image, without changing selection.
- */
 export class Building {
   constructor(scene, config, onSelect) {
     this.id = config.id;
@@ -18,26 +15,42 @@ export class Building {
     this.flashTween = null;
 
     this.container = scene.add.container(config.x, config.y);
-    this.container.setDepth(5);
+    // Buildings sort back to front by ground contact. The crew uses the open foreground lane.
+    this.container.setDepth(10 + config.y / scene.scale.height);
     this.container.name = config.id;
 
-    this.selection = scene.add.ellipse(0, 36, 116, 40, 0xf2d48a, 0.22);
-    this.selection.setStrokeStyle(3, 0xf2d48a, 1);
+    for (const [width, height, alpha] of [[0.9, 34, 0.1], [0.77, 25, 0.17], [0.63, 16, 0.24]]) {
+      scene.add.ellipse(config.x + 7, config.y + 1, config.padWidth * width, height, 0x111b2d, alpha)
+        .setDepth(3);
+    }
+
+    this.selection = scene.add.ellipse(0, 0, config.padWidth * 0.91, 36, 0x92eee4, 0.25);
+    this.selection.setStrokeStyle(3, 0xacfff3, 0.96);
     this.selection.setVisible(false);
     this.container.add(this.selection);
 
-    this.drawPlaceholder(config);
+    const art = addWorldImage(scene, worldAssets[this.id]);
+    if (art) {
+      this.container.add(art.image);
+    } else {
+      this.drawPlaceholder(config);
+    }
 
-    const label = scene.add.text(0, 62, config.shortName, {
-      fontFamily: "Trebuchet MS, Verdana, sans-serif",
-      fontSize: "16px",
-      color: "#f4efe6",
+    this.label = scene.add.text(0, 24, config.shortName, {
+      fontFamily: "Segoe UI, sans-serif",
+      fontSize: "20px",
+      fontStyle: "bold",
+      color: "#f2f7ff",
+      backgroundColor: "#202b3c",
+      padding: { x: 9, y: 3 },
     }).setOrigin(0.5);
-    label.setStroke("#1a140c", 4);
-    this.container.add(label);
+    this.container.add(this.label);
 
+    const left = art ? Math.min(art.left, -58) - 5 : -64;
+    const right = art ? Math.max(art.right, 58) + 5 : 64;
+    const top = art ? -art.height - 5 : -82;
     this.container.setInteractive(
-      new Phaser.Geom.Rectangle(-64, -78, 128, 150),
+      new Phaser.Geom.Rectangle(left, top, right - left, 42 - top),
       Phaser.Geom.Rectangle.Contains,
     );
     this.container.input.cursor = "pointer";
@@ -45,9 +58,7 @@ export class Building {
   }
 
   drawPlaceholder(config) {
-    const graphics = this.scene.add.graphics();
-    graphics.fillStyle(0x000000, 0.25);
-    graphics.fillEllipse(0, 40, 96, 24);
+    const graphics = this.scene.add.graphics({ y: -36 });
 
     if (config.type === "habitat") this.drawHabitat(graphics, config);
     if (config.type === "oxygen") this.drawOxygen(graphics, config);

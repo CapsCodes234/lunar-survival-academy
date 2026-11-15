@@ -155,7 +155,7 @@ The end of a day always runs in this order:
 5. Check for defeat or victory.
 6. On a surviving day before day 5, advance the day and restore 2 actions.
 
-The simulated storm adds 65 fictional risk points once, at the end of Day 3. The meter starts at 35, so use Prepare Radiation Shelter before ending Day 3. The warning explains sheltering, and the risk meter uses no radiation-dose units.
+The Day 3 drill draws on a solar energetic particle event detected by GOES on 30 July 2026. The simulated storm adds 65 fictional risk points once, at the end of Day 3. The meter starts at 35, so use Prepare Radiation Shelter before ending Day 3. The archived observation explains why shelter matters. The game's risk score is independent of the measured proton flux. [NASA DONKI alert](https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/47880/1)
 
 The mission ends in victory after the day 5 check if power, oxygen, food, and water are all above 0 and radiation risk is below 100. A critical resource at 0, or radiation risk at 100, is a defeat. After either ending, further actions and day changes are rejected until restart.
 
@@ -213,19 +213,19 @@ Do not commit `node_modules/` or `dist/`. They are listed in `.gitignore`.
 - Daily consumption, the Day 3 radiation warning, victory, defeat, and restart.
 - Automated tests for the rules, a winning route, and a failed no-action route.
 - Educational guidance in the existing building panels, notifications, and Mission Log.
+- An archived NASA DONKI observation in the Day 3 drill, with a source link in NASA Science / References and the Habitat science note.
 
 ## What is not finished
 
 - Three active astronauts, pathfinding, and animation frames.
-- Integration of a verified NASA source from the official challenge’s Resources list. See [NASA verification status](NASA_SOURCES.md).
 - More mission events, tutorials, and sound.
 
 ## Which numbers are simplified
 
 Resource costs, rewards, daily consumption, growth times, and radiation risk are fictional gameplay values defined in `src/core/constants.js`. This distinction appears in the building notes and the NASA Science / References view.
 
-## Where NASA references must be added
+## NASA science reference
 
-The official challenge lists DONKI, RadLab, and OSDR. The team still needs to choose a specific archived event or study for the game. Record its title, date, URL, and intended use in [NASA sources](NASA_SOURCES.md), then connect it to the corresponding scenario or facility note.
+The [NASA source record](NASA_SOURCES.md) documents the DONKI notification, how it informs the Day 3 shelter decision, and the limits of using a near-Earth observation for a lunar training exercise.
 
 `AI_DISCLOSURE.md` records the AI assistance used to draft this foundation. Update it if the team uses another tool.

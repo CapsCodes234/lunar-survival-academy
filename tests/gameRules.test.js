@@ -4,6 +4,7 @@ import { assessBuildingAction } from "../src/core/buildingActions.js";
 import { createGameController } from "../src/core/gameController.js";
 import { createInitialState } from "../src/core/initialState.js";
 import { applyResourceDelta, resolveEndOfDay } from "../src/core/gameRules.js";
+import { describeDonkiObservation, donkiObservation, educationalContent } from "../src/data/educationalContent.js";
 
 function endDay(controller) {
   return controller.dispatch({ type: "END_DAY" });
@@ -63,6 +64,27 @@ test("power and radiation stay inside their meters", () => {
   assert.equal(below.radiationRisk, 0);
 });
 
+test("the Habitat science note links the verified read-only NASA DONKI record", () => {
+  const source = educationalContent.habitat.nasaSource;
+  assert.equal(source, donkiObservation);
+  assert.match(source.sourceName, /NASA Community Coordinated Modeling Center.*DONKI/);
+  assert.equal(source.notificationTitle, "Auto-generated Space Weather Notification - SEP");
+  assert.equal(source.notificationId, "20260730-AL-005");
+  assert.equal(source.eventType, "solar energetic particle (SEP)");
+  assert.equal(source.observedAt, "2026-07-30T18:45:00Z");
+  assert.equal(source.issuedAt, "2026-07-30T18:53:31Z");
+  assert.deepEqual(source.observation, {
+    instrument: "GOES",
+    energyThresholdMeV: 10,
+    fluxThresholdPfu: 10,
+  });
+  assert.equal(source.sourceUrl, "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/47880/1");
+  assert.match(source.limitations, /near Earth.*lunar surface dose.*archived.*fictional risk points/i);
+  assert.ok(Object.isFrozen(source));
+  assert.ok(Object.isFrozen(source.observation));
+  assert.match(describeDonkiObservation(), /30 July 2026.*18:45 UTC.*GOES.*10 MeV exceeded 10 particle flux units/);
+});
+
 test("daily consumption is applied once and the day 3 warning raises radiation once", () => {
   const controller = createGameController();
   assert.equal(action(controller, "habitat", "shelter").ok, true);
@@ -77,8 +99,17 @@ test("daily consumption is applied once and the day 3 warning raises radiation o
   const dayThree = endDay(controller);
   assert.equal(dayThree.ok, true);
   assert.match(dayThree.message, /Solar Radiation Warning/);
+  assert.match(dayThree.state.currentEvent.message, /NASA DONKI alert 20260730-AL-005/);
+  assert.ok(dayThree.state.currentEvent.message.includes(describeDonkiObservation()));
+  assert.match(dayThree.state.currentEvent.message, /65 fictional risk points/);
   assert.equal(controller.getState().day, 4);
-  assert.equal(controller.getState().resources.radiationRisk, 80);
+  assert.deepEqual(controller.getState().resources, {
+    power: 25,
+    oxygen: 9,
+    food: 9,
+    water: 37,
+    radiationRisk: 80,
+  });
   assert.equal(controller.getState().currentEvent.id, "solar-radiation-warning");
   assert.deepEqual(controller.getState().triggeredEventIds, ["solar-radiation-warning"]);
 

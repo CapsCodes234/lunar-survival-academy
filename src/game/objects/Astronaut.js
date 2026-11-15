@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import { addWorldImage, worldAssets } from "../worldAssets.js";
 
 function prefersReducedMotion() {
   return typeof window.matchMedia === "function"
@@ -18,15 +18,27 @@ export class Astronaut {
     this.tween = null;
 
     this.container = scene.add.container(x, y);
-    this.container.setDepth(8);
+    this.container.setDepth(20);
     this.draw();
   }
 
   draw() {
     const graphics = this.scene.add.graphics();
-    graphics.fillStyle(0x000000, 0.28);
-    graphics.fillEllipse(0, -2, 34, 12);
+    graphics.fillStyle(0x172237, 0.19);
+    graphics.fillEllipse(5, 1, 43, 12);
+    graphics.fillStyle(0x172237, 0.29);
+    graphics.fillEllipse(3, 1, 30, 7);
+    this.container.add(graphics);
 
+    const art = addWorldImage(this.scene, worldAssets.astronaut);
+    if (art) {
+      this.container.add(art.image);
+    } else {
+      this.drawPlaceholder(graphics);
+    }
+  }
+
+  drawPlaceholder(graphics) {
     graphics.fillStyle(0xc8c3b8, 1);
     graphics.fillRoundedRect(-18, -34, 10, 16, 2);
 
@@ -41,15 +53,6 @@ export class Astronaut {
     graphics.fillCircle(2, -46, 10);
     graphics.fillStyle(0x243044, 1);
     graphics.fillRoundedRect(-4, -50, 12, 8, 3);
-
-    const label = this.scene.add.text(0, 8, "Crew", {
-      fontFamily: "Trebuchet MS, Verdana, sans-serif",
-      fontSize: "14px",
-      color: "#f4efe6",
-    }).setOrigin(0.5);
-    label.setStroke("#1a140c", 3);
-
-    this.container.add([graphics, label]);
   }
 
   moveTo(x, y) {

@@ -6,7 +6,7 @@ The official challenge is **Build a Junior Astronaut Mission Trainer**:
 
 https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/
 
-This repository is the Phase 1 foundation. It has a playable colony map, one action for each building, a five-day simulation, and automated tests. It is not the finished game.
+Phase 2C adds the illustrated colony and crew to the playable five-day mission.
 
 ## Technology
 
@@ -83,10 +83,10 @@ npm run check
 | `src/main.js` | Starts the controller, the HTML interface, and Phaser. |
 | `src/styles/main.css` | Visual styling for the page around the map. |
 | `src/ui/` | Resource bar, building panel, and button behavior. |
-| `src/game/` | Phaser configuration, the colony scene, and placeholder art. |
+| `src/game/` | Phaser configuration, terrain, sprite definitions, and fallback art. |
 | `src/core/` | Mission rules. This code does not use Phaser or the page. |
 | `src/data/` | Building names, positions, and teaching notes. |
-| `public/assets/` | Future image files. The game does not require them yet. |
+| `public/assets/` | Phase 2C facility and crew artwork. |
 | `tests/` | Automated checks for the rules. |
 
 ## How Phaser talks to the interface
@@ -169,36 +169,22 @@ The mission ends in victory after the day 5 check if power, oxygen, food, and wa
 
 The building panel lists actions for a building automatically. An invalid action must leave the mission unchanged.
 
-## Replace placeholder art
+## Colony artwork
 
-The map, buildings, and astronaut are drawn with Phaser shapes in:
+The [asset manifest](ASSET_MANIFEST.md) records the five approved PNGs. `src/game/worldAssets.js` defines their texture keys, deployed paths, and sprite framing. `ColonyScene.preload` uses Vite's base URL to load them, and the existing Phaser shapes serve as fallbacks for unavailable textures.
 
-- `src/game/scenes/ColonyScene.js`
-- `src/game/objects/Building.js`
-- `src/game/objects/Astronaut.js`
+`src/game/scenes/lunarTerrain.js` draws the starfield, lunar shelf, craters, paths, and foundations from deterministic placement. Buildings sort by their ground position. The crew moves directly to each building's approach point and renders above the building layer.
 
-Put new files under `public/assets/` only after the files exist. Then load them from `ColonyScene.preload`, for example:
+The scene fits a 1280 × 720 canvas. Portrait screens have space above and below the canvas, with the HUD and building sheet still available. When building for a repository subpath, set the Vite base for both the build and the preview:
 
-```javascript
-this.load.image("habitat", "/assets/buildings/habitat.png");
+```bash
+npm run build -- --base=/lunar-survival-academy/
+npm run preview -- --base=/lunar-survival-academy/
 ```
-
-Keep the shape drawing as a fallback until the image loads. The game must still open when no custom images are present. Do not use NASA logos in generated art.
-
-To add another astronaut later, add another entry to `STARTING_CREW` in `ColonyScene.js`. This phase walks the first astronaut.
 
 ## Work together with GitHub
 
-This folder is a local Git repository. It does not have a GitHub remote yet.
-
-One teammate creates an empty repository on GitHub, then connects it:
-
-```bash
-git remote add origin git@github.com:YOUR-ACCOUNT/lunar-survival-academy.git
-git push -u origin main
-```
-
-Use the repository URL GitHub gives you. The other teammate clones that repository. Before editing, pull the latest changes. Make a branch for a task, commit, and open a pull request.
+Clone the [team repository](https://github.com/CapsCodes234/lunar-survival-academy). Before editing, pull the latest changes to `main` using `git pull --ff-only`. Create a feature branch, commit, and open a pull request.
 
 Avoid editing the same file at the same time. The interface files and the simulation files are separated so that is easier. See the handoff notes below.
 
@@ -209,17 +195,15 @@ Do not commit `node_modules/` or `dist/`. They are listed in `.gitignore`.
 - Vite project, Phaser map, four buildings, and one astronaut.
 - Building selection, highlight, and walk-to animation.
 - Resource bar, one shared action panel, End Day, and Restart.
-- One action for each building, including greenhouse planting, care, growth, and harvest.
+- Building actions, including greenhouse planting, crop care, and harvest.
 - Daily consumption, the Day 3 radiation warning, victory, defeat, and restart.
 - Automated tests for those rules.
 
 ## What is not finished
 
-- Final art and a polished interface.
 - Three active astronauts, pathfinding, and animation frames.
 - A verified NASA data source. See `NASA_SOURCES.md`.
 - More mission events, tutorials, and sound.
-- A published GitHub remote.
 
 ## Which numbers are simplified
 

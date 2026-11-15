@@ -64,7 +64,9 @@ export class Building {
       Phaser.Geom.Rectangle.Contains,
     );
     this.container.input.cursor = "pointer";
-    this.container.on("pointerdown", () => onSelect(this.id));
+    this.container.on("pointerdown", (pointer) => {
+      if (pointer.event?.target === scene.game.canvas) onSelect(this.id);
+    });
   }
 
   drawPlaceholder(config) {

@@ -183,6 +183,10 @@ Crop care raises the harvest but uses an action, power, and water. Keep enough p
 
 The building panel lists actions for a building automatically. An invalid action must leave the mission unchanged.
 
+## Game audio
+
+Open **Mission Control → Sound settings** to mute all game audio, adjust effects, or enable quiet habitat ambience. Effects default to 40% and ambience starts off. Preferences are saved when browser storage is available. Audio starts after a player interaction. All cues are synthesized in the browser and represent equipment, crew interfaces, or activity inside the habitat.
+
 ## Colony artwork
 
 The [asset manifest](ASSET_MANIFEST.md) records the five approved PNGs. `src/game/worldAssets.js` defines their texture keys, deployed paths, and sprite framing. `ColonyScene.preload` uses Vite's base URL to load them, and the existing Phaser shapes serve as fallbacks for unavailable textures.
@@ -218,7 +222,7 @@ Do not commit `node_modules/` or `dist/`. They are listed in `.gitignore`.
 ## What is not finished
 
 - Three active astronauts, pathfinding, and animation frames.
-- More mission events, tutorials, and sound.
+- More mission events and tutorials.
 
 ## Which numbers are simplified
 

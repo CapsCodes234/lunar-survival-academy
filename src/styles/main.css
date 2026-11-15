@@ -364,6 +364,20 @@ a { color: #92e3ea; }
 [data-dialog-view="help"] li + li { margin-top: 0.45rem; }
 .dialog-actions { display: flex; justify-content: end; gap: 0.5rem; }
 .dialog-back { margin-top: 0.75rem; }
+.sound-settings input { accent-color: var(--gold); }
+.sound-settings__toggle,
+.sound-settings__volume > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.sound-settings__toggle { min-height: 2.75rem; cursor: pointer; }
+.sound-settings__toggle input { width: 1.25rem; height: 1.25rem; margin: 0; }
+.sound-settings__volume { border-block: 1px solid var(--line); padding-block: 0.55rem 0; }
+.sound-settings__volume input { display: block; width: 100%; min-height: 2.75rem; margin: 0; }
+.sound-settings__volume output { color: var(--gold); font-variant-numeric: tabular-nums; }
+.sound-settings__hint { color: var(--muted); font-size: 0.875rem; }
 .result-resources {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

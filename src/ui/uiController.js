@@ -1,9 +1,11 @@
 import { assessBuildingAction, describeActionCost, listActionsForBuilding } from "../core/buildingActions.js";
 import { COMMANDS } from "../core/gameController.js";
+import { actionAudio, dayAudio } from "../game/audio/audioRouting.js";
 import { describeDonkiObservation, donkiObservation, educationalContent } from "../data/educationalContent.js";
 import { buildings, getBuildingById } from "../data/buildings.js";
 import { resourceChanges, resourceLabels } from "../data/missionFeedback.js";
 import { renderBuildingPanel } from "./buildingPanel.js";
+import { mountAudioSettings } from "./audioSettings.js";
 
 const DAY_RECAP_MS = 2200;
 
@@ -44,6 +46,11 @@ const REQUIRED_IDS = [
   "close-mission-control",
   "resume-game",
   "mission-control-back",
+  "audio-master",
+  "audio-volume",
+  "audio-volume-text",
+  "audio-ambience",
+  "audio-status",
   "cancel-restart",
   "confirm-restart",
   "mission-log-empty",
@@ -54,6 +61,7 @@ const DIALOG_TITLES = {
   menu: "Mission Control",
   help: "How to Play",
   science: "NASA Science / References",
+  sound: "Sound settings",
   restart: "Restart Mission?",
   log: "Mission Log",
 };
@@ -71,7 +79,7 @@ function showSetupError(message) {
  * Connects the HTML interface to the game controller and the Phaser bridge.
  * Resource numbers are always read from controller state. They are not stored here.
  */
-export function mountInterface({ controller, bridge }) {
+export function mountInterface({ controller, bridge, audio }) {
   const missing = REQUIRED_IDS.filter((id) => !document.getElementById(id));
   if (missing.length > 0) {
     showSetupError(`The page is missing these interface elements: ${missing.join(", ")}.`);
@@ -79,6 +87,14 @@ export function mountInterface({ controller, bridge }) {
   }
 
   const element = Object.fromEntries(REQUIRED_IDS.map((id) => [id, document.getElementById(id)]));
+  mountAudioSettings({
+    audio,
+    master: element["audio-master"],
+    volume: element["audio-volume"],
+    volumeText: element["audio-volume-text"],
+    ambience: element["audio-ambience"],
+    status: element["audio-status"],
+  });
   const panel = element["building-panel"];
   const buildingsMenu = element["buildings-menu"];
   const buildingsToggle = buildingsMenu.querySelector("summary");
@@ -200,8 +216,15 @@ export function mountInterface({ controller, bridge }) {
           actionId,
         });
         showFeedback(result, "Action complete", before.currentEvent?.id);
+        const changes = resourceChanges(before.resources, result.state.resources);
+        const { cue, spentOnly, task } = actionAudio(result, building.id, actionId, changes);
+        audio.play(cue, { spentOnly });
         if (result.ok) {
-          bridge.playActionFeedback(building.id, resourceChanges(before.resources, result.state.resources));
+          const onTaskComplete = task ? () => {
+            const state = controller.getState();
+            if (state.day === before.day && state.missionStatus === "active") audio.play("task");
+          } : undefined;
+          bridge.playActionFeedback(building.id, changes, onTaskComplete);
           if (result.state.missionStatus !== "active") {
             finishDayRecap();
             showMissionResult(result.state);
@@ -269,6 +292,7 @@ export function mountInterface({ controller, bridge }) {
       hidePanel();
       return;
     }
+    if (selectedId !== buildingId) audio.play("select");
     openPanel(buildingId);
   };
 
@@ -320,6 +344,7 @@ export function mountInterface({ controller, bridge }) {
     event.currentTarget.disabled = true;
     const result = controller.dispatch({ type: COMMANDS.END_DAY });
     showFeedback(result, "Day complete", before.currentEvent?.id);
+    audio.play(dayAudio(before, result));
     if (result.ok && result.state.missionStatus === "active") {
       showDayRecap(before, result.state, restoreFocus);
       return;
@@ -392,6 +417,7 @@ export function mountInterface({ controller, bridge }) {
   }
 
   function restartMission() {
+    audio.stopEffects();
     finishDayRecap();
     hidePanel();
     bridge.clearSelection();

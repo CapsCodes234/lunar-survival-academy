@@ -41,6 +41,8 @@ export class ColonyScene extends Phaser.Scene {
       console.error("ColonyScene could not find the UI bridge. The map will still render.");
     }
     this.bridge = registered ?? { onBuildingSelected() {} };
+    const audio = this.registry.get("missionAudio");
+    audio?.setSceneActive(true);
 
     drawLunarTerrain(this, buildings, STARTING_CREW[0]);
     for (const config of buildings) {
@@ -71,16 +73,19 @@ export class ColonyScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, resizeLabels);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, resizeLabels);
+      audio?.setSceneActive(false);
     });
 
     this.input.topOnly = true;
-    this.input.on("pointerdown", (_pointer, currentlyOver) => {
-      if (currentlyOver.length === 0) this.clearSelection();
+    this.input.on("pointerdown", (pointer, currentlyOver) => {
+      if (pointer.event?.target === this.game.canvas && currentlyOver.length === 0) this.clearSelection();
     });
 
     this.bridge.clearSelection = () => this.clearSelection();
     this.bridge.moveAstronautTo = (buildingId) => this.moveAstronautTo(buildingId);
-    this.bridge.playActionFeedback = (buildingId, changes) => this.playActionFeedback(buildingId, changes);
+    this.bridge.playActionFeedback = (buildingId, changes, onTaskComplete) => {
+      this.playActionFeedback(buildingId, changes, onTaskComplete);
+    };
     this.bridge.playRadiationWarning = () => this.playRadiationWarning();
     this.bridge.resetVisuals = () => this.resetVisuals();
     this.bridge.selectBuilding = (buildingId) => this.selectBuilding(buildingId);
@@ -117,14 +122,14 @@ export class ColonyScene extends Phaser.Scene {
     this.activeAstronaut.moveTo(building.approachX, building.approachY);
   }
 
-  playActionFeedback(buildingId, changes = []) {
+  playActionFeedback(buildingId, changes = [], onTaskComplete) {
     const building = this.buildingById.get(buildingId);
     if (!building) return;
     for (const other of this.buildings) {
       if (other !== building) other.clearActivity();
     }
     building.flash();
-    this.activeAstronaut?.workAt(building.approachX, building.approachY, building.activityColor);
+    this.activeAstronaut?.workAt(building.approachX, building.approachY, building.activityColor, onTaskComplete);
     this.clearResourceFeedback();
     if (!changes.length) return;
 

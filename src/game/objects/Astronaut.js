@@ -92,7 +92,7 @@ export class Astronaut {
     callback?.();
   }
 
-  workAt(x, y, color) {
+  workAt(x, y, color, onComplete) {
     this.moveTo(x, y, () => {
       this.taskLight.setFillStyle(color, 0.22).setStrokeStyle(2, color, 0.9).setVisible(true);
       if (!prefersReducedMotion()) {
@@ -106,7 +106,10 @@ export class Astronaut {
           onComplete: () => { this.taskTween = null; },
         });
       }
-      this.taskTimer = this.scene.time.delayedCall(640, () => this.clearTask());
+      this.taskTimer = this.scene.time.delayedCall(640, () => {
+        this.clearTask();
+        onComplete?.();
+      });
     });
   }
 

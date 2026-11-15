@@ -95,6 +95,7 @@
           <button type="button" class="button button--primary" id="resume-game" autofocus>Resume Game</button>
           <button type="button" class="button" data-show-view="help">How to Play</button>
           <button type="button" class="button" data-show-view="science">NASA Science / References</button>
+          <button type="button" class="button" data-show-view="sound">Sound settings</button>
           <button type="button" class="button button--danger" id="restart-mission" data-show-view="restart">Restart Mission</button>
         </section>
         <section data-dialog-view="help" hidden>
@@ -117,6 +118,25 @@
             <button type="button" class="button" id="cancel-restart">Cancel</button>
             <button type="button" class="button button--danger" id="confirm-restart">Restart Mission</button>
           </div>
+        </section>
+        <section data-dialog-view="sound" class="sound-settings" hidden>
+          <label class="sound-settings__toggle">
+            <span>Game audio</span>
+            <input id="audio-master" type="checkbox" checked>
+          </label>
+          <div class="sound-settings__volume">
+            <div>
+              <label for="audio-volume">Sound effects volume</label>
+              <output id="audio-volume-text" for="audio-volume" aria-live="off">40%</output>
+            </div>
+            <input id="audio-volume" type="range" min="0" max="100" value="40">
+          </div>
+          <label class="sound-settings__toggle">
+            <span>Habitat ambience</span>
+            <input id="audio-ambience" type="checkbox">
+          </label>
+          <p class="sound-settings__hint">Game sounds represent equipment, crew interfaces, and activity inside the habitat.</p>
+          <p id="audio-status" class="sound-settings__hint" role="status"></p>
         </section>
         <section data-dialog-view="log" hidden>
           <p id="mission-log-empty">Mission messages will appear here as you play.</p>

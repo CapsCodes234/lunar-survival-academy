@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/gameRules.test.js tests/buildingActions.test.js",
+    "test": "node --test tests/gameRules.test.js tests/buildingActions.test.js tests/audio.test.js",
     "check": "npm test && npm run build"
   },
   "dependencies": {

@@ -10,6 +10,7 @@ Lunar Survival Academy
 | ChatGPT image generation | Created the approved astronaut, habitat, oxygen station, hydroponic greenhouse, and solar power station artwork. | Generation date unrecorded |
 | OpenAI Codex | Implemented Phase 2C sprite integration, procedural lunar terrain, asset documentation, and verification. | 15 November 2026 |
 | OpenAI Codex | Helped balance the Phase 3 mission, write educational feedback and tests, verify and integrate the archived NASA DONKI observation, and check gameplay. | 15 November 2026 |
+| OpenAI Codex | Implemented Phase 3.6 procedural sound effects, habitat ambience, sound controls, and verification. | 15 November 2026 |
 
 See the [asset manifest](ASSET_MANIFEST.md) for original filenames and project paths.
 

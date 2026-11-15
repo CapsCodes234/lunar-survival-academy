@@ -1,5 +1,6 @@
 import { scheduledEventsFor } from "./events.js";
 import { cloneState, createGreenhouseState } from "./initialState.js";
+import { shortageGuidance } from "../data/educationalContent.js";
 import {
   ACTIONS_PER_DAY,
   DAILY_CONSUMPTION,
@@ -8,6 +9,7 @@ import {
   RADIATION_MAX,
   RADIATION_MIN,
   RESOURCE_MAX,
+  SOLAR_RADIATION_EVENT,
   TRACKED_RESOURCES,
 } from "./constants.js";
 
@@ -46,13 +48,14 @@ export function applyResourceDelta(resources, delta) {
  * The first matching reason is the one shown to the player.
  */
 export function getDefeatReason(state) {
-  const { power, oxygen, food, water, radiationRisk } = state.resources;
-  if (power <= 0) return "The colony ran out of power.";
-  if (oxygen <= 0) return "The colony ran out of oxygen.";
-  if (food <= 0) return "The colony ran out of food.";
-  if (water <= 0) return "The colony ran out of water.";
-  if (radiationRisk >= RADIATION_MAX) {
-    return "Radiation risk reached 100. The crew cannot continue.";
+  const depleted = TRACKED_RESOURCES.find((resource) => state.resources[resource] <= 0);
+  if (depleted) {
+    const { impact, action } = shortageGuidance[depleted];
+    return `The colony ran out of ${depleted}. ${impact} On your next mission, ${lowercaseFirst(action)}`;
+  }
+  if (state.resources.radiationRisk >= RADIATION_MAX) {
+    const { impact, action } = shortageGuidance.radiationRisk;
+    return `Radiation risk reached ${RADIATION_MAX} game points. ${impact} On your next mission, ${lowercaseFirst(action)}`;
   }
   return null;
 }
@@ -92,7 +95,8 @@ export function processGreenhouseDay(state) {
 
   if (!canAfford(next.resources, costs)) {
     next.greenhouse.growthPaused = true;
-    return { state: next, grew: false, paused: true, becameReady: false };
+    const shortages = Object.keys(costs).filter((key) => next.resources[key] < costs[key]);
+    return { state: next, grew: false, paused: true, becameReady: false, shortages };
   }
 
   next.resources = applyResourceDelta(next.resources, {
@@ -131,10 +135,34 @@ export function applyScheduledEvent(state) {
   return { state: next, appliedEvents: applied };
 }
 
-function dayMessage({ completedDay, growth, appliedEvents, outcome, reason, nextDay }) {
+function lowercaseFirst(text) {
+  return text[0].toLowerCase() + text.slice(1);
+}
+
+function missionAdvisory(state) {
+  const depleted = TRACKED_RESOURCES.find((resource) => state.resources[resource] <= DAILY_CONSUMPTION[resource]);
+  if (depleted) {
+    const { impact, action } = shortageGuidance[depleted];
+    let recovery = action;
+    if (depleted === "food") {
+      recovery = state.greenhouse.crop === "ready"
+        ? "Harvest Lettuce before ending the day."
+        : "Start a crop earlier in your next mission.";
+    }
+    return `Ending the next day could use up all ${depleted}. ${impact} ${recovery}`;
+  }
+  const storm = SOLAR_RADIATION_EVENT;
+  if (state.day <= storm.day && state.resources.radiationRisk + storm.radiationIncrease >= RADIATION_MAX) {
+    return `Solar storm expected at the end of Day ${storm.day}. ${shortageGuidance.radiationRisk.action}`;
+  }
+  return "";
+}
+
+function dayMessage({ completedDay, growth, appliedEvents, outcome, reason, next }) {
   const parts = [`Day ${completedDay} complete. Daily supplies were consumed.`];
   if (growth.paused) {
-    parts.push("Greenhouse growth paused because power or water could not cover upkeep.");
+    const actions = growth.shortages.map((key) => shortageGuidance[key].action);
+    parts.push(`The crop stopped growing. It needs more ${growth.shortages.join(" and ")} for upkeep. ${actions.join(" ")}`);
   } else if (growth.becameReady) {
     parts.push("Lettuce is ready to harvest.");
   } else if (growth.grew) {
@@ -146,7 +174,9 @@ function dayMessage({ completedDay, growth, appliedEvents, outcome, reason, next
     parts.push("The colony stayed operational through Day 5. Mission success.");
   }
   if (outcome === "continued") {
-    parts.push(`Day ${nextDay} begins with ${ACTIONS_PER_DAY} actions.`);
+    parts.push(`Day ${next.day} begins with ${ACTIONS_PER_DAY} actions.`);
+    const advisory = missionAdvisory(next);
+    if (advisory) parts.push(advisory);
   }
   return parts.join(" ");
 }
@@ -218,7 +248,7 @@ export function resolveEndOfDay(state) {
       growth,
       appliedEvents: eventResult.appliedEvents,
       outcome: "continued",
-      nextDay: next.day,
+      next,
     }),
     state: next,
   };

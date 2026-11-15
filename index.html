@@ -17,28 +17,28 @@
           <li class="meter meter--power">
             <span class="meter__icon" aria-hidden="true">ϟ</span>
             <span class="meter__label">Power</span>
-            <strong class="meter__value" id="meter-power">80</strong>
+            <strong class="meter__value" id="meter-power">48</strong>
           </li>
           <li class="meter meter--oxygen">
             <span class="meter__icon" aria-hidden="true">O₂</span>
             <span class="meter__label">Oxygen</span>
-            <strong class="meter__value" id="meter-oxygen">80</strong>
+            <strong class="meter__value" id="meter-oxygen">30</strong>
           </li>
           <li class="meter meter--food">
             <span class="meter__icon" aria-hidden="true"></span>
             <span class="meter__label">Food</span>
-            <strong class="meter__value" id="meter-food">70</strong>
+            <strong class="meter__value" id="meter-food">27</strong>
           </li>
           <li class="meter meter--water">
             <span class="meter__icon" aria-hidden="true"></span>
             <span class="meter__label">Water</span>
-            <strong class="meter__value" id="meter-water">70</strong>
+            <strong class="meter__value" id="meter-water">46</strong>
           </li>
           <li class="meter meter--radiation">
             <span class="meter__icon" aria-hidden="true">☢︎</span>
             <span class="meter__label">Radiation risk</span>
-            <strong class="meter__value" id="meter-radiation" aria-describedby="radiation-help">10</strong>
-            <span id="radiation-help" class="sr-only">Higher radiation risk is more dangerous. 100 ends the mission.</span>
+            <strong class="meter__value" id="meter-radiation" aria-describedby="radiation-help">35</strong>
+            <span id="radiation-help" class="sr-only">This meter uses fictional game points. A score of 100 ends the mission.</span>
           </li>
         </ul>
         <div class="hud__right">
@@ -94,13 +94,15 @@
           <ol>
             <li>Select a building on the map or from the Buildings menu.</li>
             <li>Read what an action costs before you use it. You have two actions each day.</li>
-            <li>Choose End Day to advance time. Keep the crew supplied and radiation risk below 100 through day five.</li>
+            <li>Plant lettuce early so it has two days to grow. Restore power at the solar station and use some of it to make oxygen.</li>
+            <li>Prepare the Habitat shelter before ending Day 3. Keep every supply above zero and radiation risk below 100 through Day 5.</li>
           </ol>
         </section>
         <section data-dialog-view="science" hidden>
-          <p>The notes in each building panel explain the science behind its actions. Resource numbers are fictional training values.</p>
-          <p>The project is still verifying the challenge’s NASA data sources.</p>
-          <a href="https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/" target="_blank" rel="noopener noreferrer">NASA Space Apps challenge page (opens in a new tab)</a>
+          <p id="donki-observation"></p>
+          <p>Fast particles from the Sun can expose astronauts to radiation. A shielded shelter helps protect the crew during a solar particle event.</p>
+          <p id="donki-limitations"></p>
+          <a id="donki-source" target="_blank" rel="noopener noreferrer"></a>
         </section>
         <section data-dialog-view="restart" hidden>
           <p>Start again from Day 1? Your current mission progress will be lost.</p>

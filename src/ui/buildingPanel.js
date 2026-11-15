@@ -96,11 +96,23 @@ export function renderBuildingPanel(panel, { building, topic, state, actions, on
     summary.textContent = "Mission science";
     science.append(summary);
     addLine(science, "education-note", topic.summary);
-    addLine(
-      science,
-      "education-note education-note--source",
-      "A NASA data source has not been linked to this note yet.",
-    );
+    addLine(science, "education-note", topic.simplification);
+    const source = topic.nasaSource;
+    if (source) {
+      const link = document.createElement("a");
+      link.className = "education-note education-note--source";
+      link.href = source.sourceUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Read the NASA DONKI alert (opens in a new tab)";
+      science.append(link);
+    } else {
+      addLine(
+        science,
+        "education-note education-note--source",
+        "A NASA data source has not been linked to this note yet.",
+      );
+    }
     panel.append(science);
   }
 

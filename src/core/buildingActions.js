@@ -9,6 +9,7 @@ import {
 } from "./constants.js";
 import { cloneState, createGreenhouseState } from "./initialState.js";
 import { applyResourceDelta, applySurvivalOutcome, canAfford } from "./gameRules.js";
+import { shortageGuidance } from "../data/educationalContent.js";
 
 const RESOURCE_LABELS = {
   power: "power",
@@ -137,12 +138,15 @@ function preconditionFailure(state, action) {
 
 function missingResourceMessage(state, action) {
   const missing = [];
+  const guidance = [];
   for (const [key, amount] of Object.entries(action.costs)) {
     if (state.resources[key] < amount) {
       missing.push(`${amount} ${RESOURCE_LABELS[key]} (you have ${state.resources[key]})`);
+      const { impact, action: nextStep } = shortageGuidance[key];
+      guidance.push(`${impact} ${nextStep}`);
     }
   }
-  return `Not enough resources. This action needs ${missing.join(" and ")}.`;
+  return `Not enough resources. This action needs ${missing.join(" and ")}. ${guidance.join(" ")}`;
 }
 
 function applySideEffects(next, action) {

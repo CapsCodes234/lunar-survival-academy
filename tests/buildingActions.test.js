@@ -29,23 +29,23 @@ test("valid actions deduct the correct resources", () => {
 
   const solar = perform(state, "solar", "maintain");
   assert.equal(solar.ok, true);
-  assert.equal(solar.state.resources.power, 100);
+  assert.equal(solar.state.resources.power, 68);
   assert.equal(solar.state.actionsRemaining, 1);
 
   const oxygen = perform(solar.state, "oxygen", "operate");
   assert.equal(oxygen.ok, true);
-  assert.equal(oxygen.state.resources.power, 90);
-  assert.equal(oxygen.state.resources.oxygen, 100);
+  assert.equal(oxygen.state.resources.power, 58);
+  assert.equal(oxygen.state.resources.oxygen, 50);
   assert.equal(oxygen.state.actionsRemaining, 0);
 
   state = createInitialState();
   const shelter = perform(state, "habitat", "shelter");
   assert.equal(shelter.ok, true);
-  assert.equal(shelter.state.resources.power, 72);
-  assert.equal(shelter.state.resources.radiationRisk, 0);
-  assert.equal(shelter.state.resources.oxygen, 80);
-  assert.equal(shelter.state.resources.food, 70);
-  assert.equal(shelter.state.resources.water, 70);
+  assert.equal(shelter.state.resources.power, 40);
+  assert.equal(shelter.state.resources.radiationRisk, 15);
+  assert.equal(shelter.state.resources.oxygen, 30);
+  assert.equal(shelter.state.resources.food, 27);
+  assert.equal(shelter.state.resources.water, 46);
 });
 
 test("invalid actions leave resources and the action count unchanged", () => {
@@ -76,9 +76,9 @@ test("actions are rejected when resources are too low", () => {
   const shelter = perform(state, "habitat", "shelter");
 
   assert.equal(oxygen.ok, false);
-  assert.match(oxygen.reason, /Not enough resources/);
+  assert.match(oxygen.reason, /Not enough resources.*10 power.*Life support.*Maintain Solar Array/);
   assert.equal(plant.ok, false);
-  assert.match(plant.reason, /water/);
+  assert.match(plant.reason, /8 water.*growing crops.*skipping optional crop care/);
   assert.equal(shelter.ok, false);
   assert.deepEqual(state, before);
 });
@@ -89,8 +89,8 @@ test("a player cannot take a third action in the same day", () => {
   controller.dispatch({ type: "BUILDING_ACTION", buildingId: "oxygen", actionId: "operate" });
   const before = controller.getState();
   assert.equal(before.actionsRemaining, 0);
-  assert.equal(before.resources.power, 60);
-  assert.equal(before.resources.oxygen, 100);
+  assert.equal(before.resources.power, 28);
+  assert.equal(before.resources.oxygen, 70);
 
   const third = controller.dispatch({
     type: "BUILDING_ACTION",
@@ -109,8 +109,8 @@ test("planting starts a growing crop and spends power and water", () => {
   assert.equal(planted.state.greenhouse.crop, "growing");
   assert.equal(planted.state.greenhouse.growthProgress, 0);
   assert.equal(planted.state.greenhouse.cared, false);
-  assert.equal(planted.state.resources.power, 74);
-  assert.equal(planted.state.resources.water, 62);
+  assert.equal(planted.state.resources.power, 42);
+  assert.equal(planted.state.resources.water, 38);
   assert.equal(planted.state.actionsRemaining, 1);
   assert.equal(state.greenhouse.crop, "empty");
 });
@@ -133,16 +133,16 @@ test("crop growth advances only when upkeep is paid in full", () => {
   assert.equal(firstDay.state.greenhouse.crop, "growing");
   assert.equal(firstDay.state.greenhouse.growthProgress, 1);
   assert.equal(firstDay.state.greenhouse.growthPaused, false);
-  assert.equal(firstDay.state.resources.power, 62);
-  assert.equal(firstDay.state.resources.water, 55);
-  assert.equal(firstDay.state.resources.food, 64);
+  assert.equal(firstDay.state.resources.power, 30);
+  assert.equal(firstDay.state.resources.water, 31);
+  assert.equal(firstDay.state.resources.food, 21);
 
   const ready = resolveEndOfDay(firstDay.state);
   assert.equal(ready.state.greenhouse.crop, "ready");
   assert.equal(ready.state.greenhouse.growthProgress, 2);
   assert.match(ready.message, /ready to harvest/);
-  assert.equal(ready.state.resources.power, 50);
-  assert.equal(ready.state.resources.water, 48);
+  assert.equal(ready.state.resources.power, 18);
+  assert.equal(ready.state.resources.water, 24);
 
   const paused = createInitialState();
   paused.resources.power = 10;
@@ -155,6 +155,7 @@ test("crop growth advances only when upkeep is paid in full", () => {
   assert.equal(held.state.greenhouse.growthPaused, true);
   assert.equal(held.state.resources.power, 5);
   assert.equal(held.state.resources.water, 47);
+  assert.match(held.message, /more power for upkeep.*Maintain Solar Array/);
 
   const shortWater = createInitialState();
   shortWater.resources.power = 40;
@@ -164,6 +165,7 @@ test("crop growth advances only when upkeep is paid in full", () => {
   assert.equal(waterHeld.state.greenhouse.growthProgress, 0);
   assert.equal(waterHeld.state.resources.power, 35);
   assert.equal(waterHeld.state.resources.water, 2);
+  assert.match(waterHeld.message, /more water for upkeep.*Save water/);
 });
 
 test("harvesting adds food and resets the greenhouse", () => {
@@ -172,11 +174,11 @@ test("harvesting adds food and resets the greenhouse", () => {
   state = resolveEndOfDay(state).state;
   state = resolveEndOfDay(state).state;
   assert.equal(state.greenhouse.crop, "ready");
-  assert.equal(state.resources.food, 58);
+  assert.equal(state.resources.food, 15);
 
   const harvested = perform(state, "greenhouse", "harvest");
   assert.equal(harvested.ok, true);
-  assert.equal(harvested.state.resources.food, 80);
+  assert.equal(harvested.state.resources.food, 37);
   assert.match(harvested.message, /gained 22 food/);
   assert.equal(harvested.state.greenhouse.crop, "empty");
   assert.equal(harvested.state.greenhouse.growthProgress, 0);
@@ -189,9 +191,9 @@ test("crop care is optional, improves one harvest, and cannot be repeated", () =
   const cared = perform(state, "greenhouse", "care");
   assert.equal(cared.ok, true);
   assert.equal(cared.state.greenhouse.cared, true);
-  assert.equal(cared.state.resources.food, 70);
-  assert.equal(cared.state.resources.power, 70);
-  assert.equal(cared.state.resources.water, 57);
+  assert.equal(cared.state.resources.food, 27);
+  assert.equal(cared.state.resources.power, 38);
+  assert.equal(cared.state.resources.water, 33);
 
   const retryState = structuredClone(cared.state);
   retryState.actionsRemaining = 1;
@@ -206,7 +208,7 @@ test("crop care is optional, improves one harvest, and cannot be repeated", () =
   assert.equal(state.greenhouse.crop, "ready");
   const harvested = perform(state, "greenhouse", "harvest");
   assert.equal(harvested.ok, true);
-  assert.equal(harvested.state.resources.food, 88);
+  assert.equal(harvested.state.resources.food, 45);
   assert.match(harvested.message, /gained 30 food/);
   assert.equal(harvested.state.greenhouse.crop, "empty");
 

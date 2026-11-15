@@ -1,6 +1,6 @@
 import { assessBuildingAction, describeActionCost, listActionsForBuilding } from "../core/buildingActions.js";
 import { COMMANDS } from "../core/gameController.js";
-import { educationalContent } from "../data/educationalContent.js";
+import { describeDonkiObservation, donkiObservation, educationalContent } from "../data/educationalContent.js";
 import { buildings, getBuildingById } from "../data/buildings.js";
 import { renderBuildingPanel } from "./buildingPanel.js";
 
@@ -25,6 +25,9 @@ const REQUIRED_IDS = [
   "open-mission-log",
   "mission-control",
   "dialog-title",
+  "donki-observation",
+  "donki-limitations",
+  "donki-source",
   "close-mission-control",
   "resume-game",
   "mission-control-back",
@@ -68,6 +71,10 @@ export function mountInterface({ controller, bridge }) {
   const buildingsToggle = buildingsMenu.querySelector("summary");
   const dialog = element["mission-control"];
   const log = element["mission-log-entries"];
+  element["donki-observation"].textContent = describeDonkiObservation();
+  element["donki-limitations"].textContent = donkiObservation.limitations;
+  element["donki-source"].href = donkiObservation.sourceUrl;
+  element["donki-source"].textContent = `NASA DONKI alert ${donkiObservation.notificationId} (opens in a new tab)`;
   const notificationTitle = element.notification.querySelector(".notification__title");
   const notificationMessage = element.notification.querySelector(".notification__message");
   let selectedId = null;
@@ -131,9 +138,13 @@ export function mountInterface({ controller, bridge }) {
     if (newWarning && heading !== event.title) addToLog(event.title, event.message, "warning");
     addToLog(heading, message, tone);
     notificationTitle.textContent = heading;
-    notificationMessage.textContent = newWarning && tone === "warning"
-      ? "Radiation risk rose. Read the full warning in Mission Log."
-      : message;
+    let notification = message;
+    if (status === "defeat") {
+      notification = result.state.defeatReason;
+    } else if (newWarning) {
+      notification = "A real solar particle event inspired this drill. Shelter reduces exposure. See Mission Log for the observation.";
+    }
+    notificationMessage.textContent = notification;
     element.notification.dataset.tone = tone;
     element.notification.hidden = false;
     window.clearTimeout(notificationTimer);
